@@ -1,0 +1,6 @@
+{
+    "appId": "com.forex.journal",
+    "appName": "Forex Journal",
+    "webDir": "dist",
+    "bundledWebRuntime": false
+}
