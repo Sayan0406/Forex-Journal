@@ -512,9 +512,11 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
                 <h3 className="text-xl font-bold text-[color:var(--text-primary)] mb-1">
                   {ownerName || 'Admin'}
                 </h3>
-                <p className="text-xs text-[color:var(--text-secondary)] font-mono opacity-80">
-                  {ownerEmail || 'Primary Account'}
-                </p>
+                {userRole === 'master' && ownerEmail && (
+                  <p className="text-xs text-[color:var(--text-secondary)] font-mono opacity-80">
+                    {ownerEmail}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[color:var(--glass-border)]">
