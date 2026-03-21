@@ -14,7 +14,7 @@ import WorkspacesDashboard from './components/WorkspacesDashboard';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
-const THEMES = [
+export const THEMES = [
   { id: 'theme-midnight', label: 'Midnight', color: '#0f172a' },
   { id: 'theme-forest', label: 'Forest', color: '#064e3b' },
   { id: 'theme-sunset', label: 'Sunset', color: '#881337' },

@@ -4,7 +4,9 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { calculateTotals } from '../utils/journalUtils';
-import { LayoutDashboard, LogOut, Wallet, PieChart, TrendingUp, DollarSign } from 'lucide-react';
+import { LayoutDashboard, LogOut, Wallet, PieChart, TrendingUp, DollarSign, Palette, User, FileText } from 'lucide-react';
+import JournalTable from './JournalTable';
+import { THEMES } from '../App';
 
 export default function Portal() {
     const { traderId } = useParams();
@@ -16,6 +18,8 @@ export default function Portal() {
     const [journalStats, setJournalStats] = useState(null);
     const [theme, setTheme] = useState('theme-midnight');
     const [workspaceName, setWorkspaceName] = useState('Investor Portal');
+    const [rows, setRows] = useState([]);
+    const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
 
     useEffect(() => {
         async function fetchTraderData() {
@@ -32,6 +36,7 @@ export default function Portal() {
                         setInvestorData(me);
                         if (data.theme) setTheme(data.theme);
                         if (data.name) setWorkspaceName(data.name);
+                        if (data.rows) setRows(data.rows);
                         const { pnl } = calculateTotals(data.rows || []);
                         
                         const splitPercentage = parseFloat(me.profitPercent || 0);
@@ -88,10 +93,42 @@ export default function Portal() {
                         </div>
                     </div>
                     
-                    <button onClick={logout} className="btn btn-ghost !px-4 !py-2 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10">
-                        <LogOut className="w-5 h-5 mr-2" />
-                        <span className="hidden sm:inline">Logout</span>
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+                                className="p-2 bg-[color:var(--bg-tertiary)] hover:bg-[color:var(--bg-secondary)] rounded-lg border border-[color:var(--glass-border)] text-[color:var(--text-secondary)] hover:text-[color:var(--accent-primary)] transition-all"
+                                title="Change Theme"
+                            >
+                                <Palette className="w-5 h-5" />
+                            </button>
+
+                            {isThemeMenuOpen && (
+                                <div className="absolute top-14 right-0 w-48 bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-xl shadow-2xl z-50 overflow-hidden">
+                                    <div className="max-h-[300px] overflow-y-auto">
+                                        {THEMES.map(t => (
+                                            <button
+                                                key={t.id}
+                                                onClick={() => {
+                                                    setTheme(t.id);
+                                                    setIsThemeMenuOpen(false);
+                                                }}
+                                                className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-[color:var(--bg-tertiary)] transition-colors ${theme === t.id ? 'text-[color:var(--accent-primary)] font-medium' : 'text-[color:var(--text-secondary)]'}`}
+                                            >
+                                                <div className="w-4 h-4 rounded-full border border-white/10" style={{ backgroundColor: t.color }} />
+                                                {t.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <button onClick={logout} className="btn btn-ghost !px-4 !py-2 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10">
+                            <LogOut className="w-5 h-5 mr-2" />
+                            <span className="hidden sm:inline">Logout</span>
+                        </button>
+                    </div>
                 </header>
 
                 <main className="py-8">
@@ -146,6 +183,61 @@ export default function Portal() {
                                     <h3 className="text-sm font-medium text-[color:var(--text-secondary)]">Initial Deposit</h3>
                                 </div>
                                 <p className="text-3xl font-bold text-slate-300">{formatCurrency(journalStats?.capital)}</p>
+                            </div>
+                        </div>
+
+                        {/* Journal Table Section */}
+                        <div className="mt-12">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 rounded-lg bg-indigo-500/20">
+                                    <FileText className="w-5 h-5 text-indigo-400" />
+                                </div>
+                                <h2 className="text-xl font-bold text-[color:var(--text-primary)]">Trade History</h2>
+                            </div>
+                            <JournalTable 
+                                userRole="investor"
+                                rows={rows}
+                                setRows={() => {}} // Read-only
+                            />
+                        </div>
+
+                        {/* Investor Account Section */}
+                        <div className="mt-12 mb-20">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 rounded-lg bg-[color:var(--accent-primary)]/20">
+                                    <User className="w-5 h-5 text-[color:var(--accent-primary)]" />
+                                </div>
+                                <h2 className="text-xl font-bold text-[color:var(--text-primary)]">Account Details</h2>
+                            </div>
+                            <div className="bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl p-8 shadow-xl">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-[color:var(--text-primary)]">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Investor Name</span>
+                                        <span className="text-lg font-medium">{investorData?.name}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Email Address</span>
+                                        <span className="text-lg font-medium">{investorData?.email}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Profit Share %</span>
+                                        <span className="text-lg font-medium text-emerald-400">{investorData?.profitPercent}%</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Capital Invested</span>
+                                        <span className="text-lg font-medium">{formatCurrency(investorData?.capital)}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Current P/L Split</span>
+                                        <span className={`text-lg font-bold ${journalStats?.individualPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {formatCurrency(journalStats?.individualPnl)}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Account ID</span>
+                                        <span className="text-lg font-mono text-[color:var(--text-secondary)]">{currentUser.uid.slice(0, 8)}...</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

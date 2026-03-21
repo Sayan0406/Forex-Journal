@@ -99,6 +99,24 @@ export default function JournalTable({ userRole = 'master', rows, setRows, inves
     const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
     const [deletedRows, setDeletedRows] = useState([]);
 
+    const handleExportCSV = () => {
+        if (rows.length === 0) return;
+        const headers = columns.map(c => c.label).join(',');
+        const csvRows = rows.map(row => 
+            columns.map(col => `"${(row[col.id] || '').toString().replace(/"/g, '""')}"`).join(',')
+        );
+        const csvContent = [headers, ...csvRows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `trades_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     // Processed Data (Filter -> Sort)
     const processedRows = useMemo(() => {
         let result = [...rows];
@@ -230,27 +248,43 @@ export default function JournalTable({ userRole = 'master', rows, setRows, inves
                     <td key={`${row.id}-${col.id}`} className="p-4">
                         {col.type === 'select' ? (
                             <div className="relative">
-                                <select
-                                    value={row[col.id] || ''}
-                                    onChange={(e) => handleCellChange(row.id, col.id, e.target.value)}
-                                    className={`appearance-none bg-transparent border-none font-medium focus:ring-0 w-full cursor-pointer outline-none pl-2 pr-8 py-1 rounded min-w-[100px] ${row[col.id] === 'Buy' ? 'text-emerald-400 bg-emerald-400/10' :
+                                {userRole === 'investor' ? (
+                                    <span className={`font-medium px-2 py-1 rounded text-sm ${row[col.id] === 'Buy' ? 'text-emerald-400 bg-emerald-400/10' :
                                         row[col.id] === 'Sell' ? 'text-rose-400 bg-rose-400/10' : 'text-[color:var(--text-primary)]'
-                                        }`}
-                                >
-                                    <option value="" className="bg-[color:var(--bg-secondary)] text-[color:var(--text-secondary)]">Select</option>
-                                    {col.options?.map(opt => (
-                                        <option key={opt} value={opt} className="bg-[color:var(--bg-secondary)] text-[color:var(--text-primary)]">{opt}</option>
-                                    ))}
-                                </select>
+                                        }`}>
+                                        {row[col.id] || '-'}
+                                    </span>
+                                ) : (
+                                    <select
+                                        value={row[col.id] || ''}
+                                        onChange={(e) => handleCellChange(row.id, col.id, e.target.value)}
+                                        className={`appearance-none bg-transparent border-none font-medium focus:ring-0 w-full cursor-pointer outline-none pl-2 pr-8 py-1 rounded min-w-[100px] ${row[col.id] === 'Buy' ? 'text-emerald-400 bg-emerald-400/10' :
+                                            row[col.id] === 'Sell' ? 'text-rose-400 bg-rose-400/10' : 'text-[color:var(--text-primary)]'
+                                            }`}
+                                    >
+                                        <option value="" className="bg-[color:var(--bg-secondary)] text-[color:var(--text-secondary)]">Select</option>
+                                        {col.options?.map(opt => (
+                                            <option key={opt} value={opt} className="bg-[color:var(--bg-secondary)] text-[color:var(--text-primary)]">{opt}</option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
                         ) : (
-                            <input
-                                type={col.type}
-                                value={row[col.id] || ''}
-                                onChange={(e) => handleCellChange(row.id, col.id, e.target.value)}
-                                className={`bg-transparent border-none w-full focus:ring-1 focus:ring-[color:var(--accent-primary)]/50 rounded px-1 outline-none min-w-[60px] lg:min-w-[80px] ${cellColorClass}`}
-                                placeholder="..."
-                            />
+                            userRole === 'investor' ? (
+                                <span className={`text-sm px-1 ${cellColorClass}`}>
+                                    {col.id === 'pnl' || col.id === 'investment' || col.id === 'entry' || col.id === 'exit' 
+                                        ? (col.id === 'pnl' ? (parseFloat(row[col.id]) >= 0 ? '+' : '') : '') + formatCurrency(row[col.id] || 0)
+                                        : (row[col.id] || '-')}
+                                </span>
+                            ) : (
+                                <input
+                                    type={col.type}
+                                    value={row[col.id] || ''}
+                                    onChange={(e) => handleCellChange(row.id, col.id, e.target.value)}
+                                    className={`bg-transparent border-none w-full focus:ring-1 focus:ring-[color:var(--accent-primary)]/50 rounded px-1 outline-none min-w-[60px] lg:min-w-[80px] ${cellColorClass}`}
+                                    placeholder="..."
+                                />
+                            )
                         )}
                     </td>
                 );
@@ -347,14 +381,22 @@ export default function JournalTable({ userRole = 'master', rows, setRows, inves
                                     <span className="hidden sm:inline">Delete All</span>
                                 </button>
                         )}
-                        <button onClick={() => setIsAiModalOpen(true)} className="btn text-sm whitespace-nowrap bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/40" title="Paste Import">
-                            <ClipboardPaste className="w-4 h-4 sm:mr-1.5" />
-                            <span className="hidden sm:inline">Paste Import</span>
+                        <button onClick={handleExportCSV} className="btn text-sm whitespace-nowrap bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40" title="Export CSV">
+                            <FileSpreadsheet className="w-4 h-4 sm:mr-1.5" />
+                            <span className="hidden sm:inline">Export CSV</span>
                         </button>
-                        <button onClick={handleAddRow} className="btn btn-primary text-sm whitespace-nowrap" title="New Trade">
-                            <Plus className="w-5 h-5 sm:mr-1" />
-                            <span className="hidden sm:inline">New Trade</span>
-                        </button>
+                        {(userRole === 'master' || userRole === 'subadmin') && (
+                            <>
+                                <button onClick={() => setIsAiModalOpen(true)} className="btn text-sm whitespace-nowrap bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/40" title="Paste Import">
+                                    <ClipboardPaste className="w-4 h-4 sm:mr-1.5" />
+                                    <span className="hidden sm:inline">Paste Import</span>
+                                </button>
+                                <button onClick={handleAddRow} className="btn btn-primary text-sm whitespace-nowrap" title="New Trade">
+                                    <Plus className="w-5 h-5 sm:mr-1" />
+                                    <span className="hidden sm:inline">New Trade</span>
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
