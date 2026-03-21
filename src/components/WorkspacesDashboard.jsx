@@ -121,7 +121,9 @@ export default function WorkspacesDashboard() {
         reserveFund: 0,
         createdAt: now,
         updatedAt: now,
-        position: workspaces.length
+        position: workspaces.length,
+        ownerName: currentUser.displayName || currentUser.email.split('@')[0],
+        ownerEmail: currentUser.email
       };
       
       console.log("Writing to Firestore...", newWorkspaceData);

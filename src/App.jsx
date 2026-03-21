@@ -43,6 +43,8 @@ function AdminLayout() {
   const { logout, currentUser } = useAuth();
   const [currentTheme, setCurrentTheme] = useState('theme-midnight');
   const [workspaceName, setWorkspaceName] = useState('Forex Journal');
+  const [ownerName, setOwnerName] = useState('');
+  const [ownerEmail, setOwnerEmail] = useState('');
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState('investor');
 
@@ -97,6 +99,8 @@ function AdminLayout() {
           if (data.reserveFund !== undefined) setReserveFund(data.reserveFund);
           if (data.theme) setCurrentTheme(data.theme);
           if (data.name) setWorkspaceName(data.name);
+          if (data.ownerName) setOwnerName(data.ownerName);
+          if (data.ownerEmail) setOwnerEmail(data.ownerEmail);
         } else {
           // Navigate to lobby if workspace id is broken or absent
           navigate('/workspaces');
@@ -180,91 +184,29 @@ function AdminLayout() {
             >
               <Home className="w-5 h-5" />
             </button>
-            <div className="p-2 bg-[color:var(--accent-primary)]/20 rounded-lg border border-[color:var(--accent-primary)]/30">
-              <LayoutDashboard className="text-[color:var(--accent-primary)] w-8 h-8" />
+            <div className="p-2 bg-[color:var(--accent-primary)]/10 rounded-lg border border-[color:var(--accent-primary)]/20">
+              <LayoutDashboard className="w-8 h-8 text-[color:var(--accent-primary)]" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-[color:var(--text-primary)] to-[color:var(--text-secondary)] bg-clip-text text-transparent">
-                {workspaceName}
-              </h1>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-black bg-gradient-to-r from-[color:var(--text-primary)] via-[color:var(--text-secondary)] to-[color:var(--text-primary)] bg-clip-text text-transparent tracking-tight">
+                  {workspaceName}
+                </h1>
+                {userRole === 'master' && (
+                  <span className="bg-amber-500/10 text-amber-500 text-[10px] font-black px-2 py-0.5 rounded border border-amber-500/20 tracking-widest uppercase shadow-sm shadow-amber-500/5">Master Trader</span>
+                )}
+                {userRole === 'subadmin' && (
+                  <span className="bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-2 py-0.5 rounded border border-indigo-500/20 tracking-widest uppercase shadow-sm shadow-indigo-500/5">Sub-Admin</span>
+                )}
+              </div>
+              {ownerName && userRole === 'subadmin' && (
+                <p className="text-[10px] text-[color:var(--text-secondary)] opacity-70 font-medium">Trader: {ownerName}</p>
+              )}
               <p className="text-[color:var(--text-secondary)] text-sm">Professional Trading Journal</p>
             </div>
           </div>
 
           <div className="flex gap-2 items-center">
-
-            <input
-              type="file"
-              id="restore-file"
-              className="hidden"
-              accept=".json"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                  try {
-                    const data = JSON.parse(event.target.result);
-
-                    // Validate: strict check removed, check for essential data
-                    if (Array.isArray(data.rows) || Array.isArray(data.investors)) {
-                      if (confirm('This will overwrite your current data. Are you sure?')) {
-                        if (data.rows) localStorage.setItem('journal_rows', JSON.stringify(data.rows));
-                        if (data.investors) localStorage.setItem('investor_profiles', JSON.stringify(data.investors));
-                        if (data.columns) localStorage.setItem('journal_columns', JSON.stringify(data.columns));
-                        if (data.reserveFund !== undefined) localStorage.setItem('reserve_fund', JSON.stringify(data.reserveFund));
-
-                        window.location.reload();
-                      }
-                    } else {
-                      alert('Invalid backup file format. Missing rows or investors data.');
-                    }
-                  } catch (err) {
-                    alert('Failed to read backup file. Invalid JSON.');
-                  }
-                };
-                reader.readAsText(file);
-                e.target.value = ''; // Reset
-              }}
-            />
-            <button
-              onClick={() => document.getElementById('restore-file').click()}
-              className="btn btn-ghost !px-4 !py-2 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10"
-              title="Restore Data"
-            >
-              <div className="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" /></svg>
-                <span className="hidden sm:inline">Restore</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => {
-                const data = {
-                  rows: JSON.parse(localStorage.getItem('journal_rows') || '[]'),
-                  investors: JSON.parse(localStorage.getItem('investor_profiles') || '[]'),
-                  columns: JSON.parse(localStorage.getItem('journal_columns') || '[]') // Best effort current state
-                };
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `forex_journal_backup_${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-              className="btn btn-ghost !px-4 !py-2 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10"
-              title="Backup Data"
-            >
-              <div className="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
-                <span className="hidden sm:inline">Backup</span>
-              </div>
-            </button>
-
             <button
               onClick={logout}
               className="btn btn-ghost !px-4 !py-2 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"
@@ -347,15 +289,16 @@ function AdminLayout() {
             </div>
           )}
           
-          <InvestorDashboard
+          <InvestorDashboard 
             userRole={userRole}
             workspaceId={workspaceId}
             totalPnL={totalPnL}
-            investors={investors}
-            setInvestors={setInvestors}
-            rows={rows}
-            reserveFund={reserveFund}
-            setReserveFund={setReserveFund}
+            investors={investors} 
+            setInvestors={setInvestors} 
+            reserveFund={reserveFund} 
+            setReserveFund={setReserveFund} 
+            ownerName={ownerName}
+            ownerEmail={ownerEmail}
           />
           <JournalTable
             userRole={userRole}

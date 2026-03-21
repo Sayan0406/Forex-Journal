@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { formatCurrency, groupTrades } from '../utils/journalUtils';
-import { Users, PieChart, TrendingUp, Wallet, Plus, Trash2, Phone, QrCode, Pencil, AlertCircle, Save, BarChart3, X, ChevronDown, ChevronRight, Calendar, Settings, Mail, Download, Link } from 'lucide-react';
+import { Users, PieChart, TrendingUp, Wallet, Plus, Trash2, Phone, QrCode, Pencil, AlertCircle, Save, BarChart3, X, ChevronDown, ChevronRight, Calendar, Settings, Mail, Download, Link, ShieldCheck } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -332,7 +332,7 @@ const ReserveFundModal = ({ reserveFund, setReserveFund, totalInvestedCapital, o
     );
 };
 
-export default function InvestorDashboard({ userRole = 'master', workspaceId, totalPnL, investors, setInvestors, rows = [], reserveFund = 0, setReserveFund }) {
+export default function InvestorDashboard({ userRole = 'master', workspaceId, totalPnL, investors, setInvestors, rows = [], reserveFund = 0, setReserveFund, traderId, ownerName, ownerEmail }) {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const { currentUser } = useAuth();
@@ -495,8 +495,42 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
             </div>
 
             {/* Aggregates */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <StatCard title="Total P/L" value={totalPnL} icon={Wallet} subtext="Gross Fund Performance" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Master Trader Info (New) */}
+          {(userRole === 'master' || userRole === 'subadmin') && (
+            <div className="glass-panel p-6 border-l-4 border-l-amber-500 bg-amber-500/5 relative overflow-hidden group">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all duration-500" />
+              
+              <div className="flex justify-between items-start mb-6">
+                <div className="p-4 bg-amber-500/10 rounded-2xl text-amber-500 shadow-inner">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <span className="bg-amber-500 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase">Master Trader</span>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-[color:var(--text-primary)] mb-1">
+                  {ownerName || 'Admin'}
+                </h3>
+                <p className="text-xs text-[color:var(--text-secondary)] font-mono opacity-80">
+                  {ownerEmail || 'Primary Account'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[color:var(--glass-border)]">
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Account Role</p>
+                  <p className="text-sm font-medium text-amber-500">Workspace Owner</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Permissions</p>
+                  <p className="text-sm font-medium text-[color:var(--text-primary)]">Full Access</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <StatCard title="Total P/L" value={totalPnL} icon={Wallet} subtext="Gross Fund Performance" />
                 <StatCard title="Investors' Share" value={totalInvestorShare} icon={PieChart} subtext="Pending Payout" highlight />
                 <StatCard
                     title="Trader's Share"
