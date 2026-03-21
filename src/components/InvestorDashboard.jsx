@@ -703,7 +703,7 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
                                         </td>
                                         <td className="p-3 text-[color:var(--text-secondary)]">
                                             <div className="flex flex-col gap-1">
-                                                {userRole === 'master' ? (
+                                                {(userRole === 'master' || userRole === 'subadmin') ? (
                                                     <>
                                                         {inv.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {inv.email}</span>}
                                                         {inv.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {inv.phone}</span>}
