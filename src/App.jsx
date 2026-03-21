@@ -11,7 +11,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Portal from './components/Portal';
 import WorkspacesDashboard from './components/WorkspacesDashboard';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 export const THEMES = [
@@ -101,6 +101,15 @@ function AdminLayout() {
           if (data.name) setWorkspaceName(data.name);
           if (data.ownerName) setOwnerName(data.ownerName);
           if (data.ownerEmail) setOwnerEmail(data.ownerEmail);
+
+          // Backfill owner metadata if missing and user is master
+          if (role === 'master' && !data.ownerName) {
+            const name = currentUser.displayName || currentUser.email.split('@')[0];
+            const email = currentUser.email;
+            updateDoc(docRef, { ownerName: name, ownerEmail: email });
+            setOwnerName(name);
+            setOwnerEmail(email);
+          }
         } else {
           // Navigate to lobby if workspace id is broken or absent
           navigate('/workspaces');
