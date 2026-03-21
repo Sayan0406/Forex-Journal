@@ -505,14 +505,13 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
                 <div className="p-4 bg-amber-500/10 rounded-2xl text-amber-500 shadow-inner">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
-                <span className="bg-amber-500 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase">Master Admin</span>
               </div>
               
               <div className="mb-6">
                 <h3 className="text-xl font-bold text-[color:var(--text-primary)] mb-1">
                   {ownerName || 'Admin'}
                 </h3>
-                {userRole === 'master' && ownerEmail && (
+                {ownerEmail && (
                   <p className="text-xs text-[color:var(--text-secondary)] font-mono opacity-80">
                     {ownerEmail}
                   </p>
