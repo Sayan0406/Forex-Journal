@@ -117,6 +117,10 @@ export default function JournalTable({ userRole = 'master', rows, setRows, inves
         document.body.removeChild(link);
     };
 
+    const handleExportPDF = () => {
+        window.print();
+    };
+
     // Processed Data (Filter -> Sort)
     const processedRows = useMemo(() => {
         let result = [...rows];
@@ -384,6 +388,10 @@ export default function JournalTable({ userRole = 'master', rows, setRows, inves
                         <button onClick={handleExportCSV} className="btn text-sm whitespace-nowrap bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40" title="Export CSV">
                             <FileSpreadsheet className="w-4 h-4 sm:mr-1.5" />
                             <span className="hidden sm:inline">Export CSV</span>
+                        </button>
+                        <button onClick={handleExportPDF} className="btn text-sm whitespace-nowrap bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 border border-sky-500/20 hover:border-sky-500/40" title="Export PDF (Print)">
+                            <Download className="w-4 h-4 sm:mr-1.5" />
+                            <span className="hidden sm:inline">Export PDF</span>
                         </button>
                         {(userRole === 'master' || userRole === 'subadmin') && (
                             <>

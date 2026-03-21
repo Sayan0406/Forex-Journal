@@ -142,104 +142,106 @@ export default function Portal() {
                             <p>{error}</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl p-6 shadow-xl">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 rounded-lg bg-[color:var(--accent-primary)]/20">
-                                        <Wallet className="w-5 h-5 text-[color:var(--accent-primary)]" />
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div className="bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl p-6 shadow-xl">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 rounded-lg bg-[color:var(--accent-primary)]/20">
+                                            <Wallet className="w-5 h-5 text-[color:var(--accent-primary)]" />
+                                        </div>
+                                        <h3 className="text-sm font-medium text-[color:var(--text-secondary)]">Current Value</h3>
                                     </div>
-                                    <h3 className="text-sm font-medium text-[color:var(--text-secondary)]">Current Value</h3>
+                                    <p className="text-3xl font-bold text-[color:var(--text-primary)]">{formatCurrency(journalStats?.currentValue)}</p>
                                 </div>
-                                <p className="text-3xl font-bold text-[color:var(--text-primary)]">{formatCurrency(journalStats?.currentValue)}</p>
+
+                                <div className="bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl p-6 shadow-xl">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 rounded-lg bg-emerald-500/20">
+                                            <TrendingUp className="w-5 h-5 text-emerald-400" />
+                                        </div>
+                                        <h3 className="text-sm font-medium text-[color:var(--text-secondary)]">Net Profit Split</h3>
+                                    </div>
+                                    <p className={`text-3xl font-bold ${journalStats?.individualPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                        {journalStats?.individualPnl >= 0 ? '+' : ''}{formatCurrency(journalStats?.individualPnl)}
+                                    </p>
+                                </div>
+
+                                <div className="bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl p-6 shadow-xl">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 rounded-lg bg-indigo-500/20">
+                                            <PieChart className="w-5 h-5 text-indigo-400" />
+                                        </div>
+                                        <h3 className="text-sm font-medium text-[color:var(--text-secondary)]">Profit Share</h3>
+                                    </div>
+                                    <p className="text-3xl font-bold text-indigo-400">{journalStats?.percentage}%</p>
+                                </div>
+
+                                <div className="bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl p-6 shadow-xl">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 rounded-lg bg-slate-500/20">
+                                            <DollarSign className="w-5 h-5 text-slate-400" />
+                                        </div>
+                                        <h3 className="text-sm font-medium text-[color:var(--text-secondary)]">Initial Deposit</h3>
+                                    </div>
+                                    <p className="text-3xl font-bold text-slate-300">{formatCurrency(journalStats?.capital)}</p>
+                                </div>
                             </div>
 
-                            <div className="bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl p-6 shadow-xl">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 rounded-lg bg-emerald-500/20">
-                                        <TrendingUp className="w-5 h-5 text-emerald-400" />
-                                    </div>
-                                    <h3 className="text-sm font-medium text-[color:var(--text-secondary)]">Net Profit Split</h3>
-                                </div>
-                                <p className={`text-3xl font-bold ${journalStats?.individualPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                    {journalStats?.individualPnl >= 0 ? '+' : ''}{formatCurrency(journalStats?.individualPnl)}
-                                </p>
-                            </div>
-
-                            <div className="bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl p-6 shadow-xl">
-                                <div className="flex items-center gap-3 mb-2">
+                            {/* Journal Table Section */}
+                            <div className="mt-12">
+                                <div className="flex items-center gap-3 mb-6">
                                     <div className="p-2 rounded-lg bg-indigo-500/20">
-                                        <PieChart className="w-5 h-5 text-indigo-400" />
+                                        <FileText className="w-5 h-5 text-indigo-400" />
                                     </div>
-                                    <h3 className="text-sm font-medium text-[color:var(--text-secondary)]">Profit Share</h3>
+                                    <h2 className="text-xl font-bold text-[color:var(--text-primary)]">Trade History</h2>
                                 </div>
-                                <p className="text-3xl font-bold text-indigo-400">{journalStats?.percentage}%</p>
+                                <JournalTable 
+                                    userRole="investor"
+                                    rows={rows}
+                                    setRows={() => {}} // Read-only
+                                />
                             </div>
 
-                            <div className="bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl p-6 shadow-xl">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 rounded-lg bg-slate-500/20">
-                                        <DollarSign className="w-5 h-5 text-slate-400" />
+                            {/* Investor Account Section */}
+                            <div className="mt-12 mb-20">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 rounded-lg bg-[color:var(--accent-primary)]/20">
+                                        <User className="w-5 h-5 text-[color:var(--accent-primary)]" />
                                     </div>
-                                    <h3 className="text-sm font-medium text-[color:var(--text-secondary)]">Initial Deposit</h3>
+                                    <h2 className="text-xl font-bold text-[color:var(--text-primary)]">Account Details</h2>
                                 </div>
-                                <p className="text-3xl font-bold text-slate-300">{formatCurrency(journalStats?.capital)}</p>
-                            </div>
-                        </div>
-
-                        {/* Journal Table Section */}
-                        <div className="mt-12">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 rounded-lg bg-indigo-500/20">
-                                    <FileText className="w-5 h-5 text-indigo-400" />
-                                </div>
-                                <h2 className="text-xl font-bold text-[color:var(--text-primary)]">Trade History</h2>
-                            </div>
-                            <JournalTable 
-                                userRole="investor"
-                                rows={rows}
-                                setRows={() => {}} // Read-only
-                            />
-                        </div>
-
-                        {/* Investor Account Section */}
-                        <div className="mt-12 mb-20">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 rounded-lg bg-[color:var(--accent-primary)]/20">
-                                    <User className="w-5 h-5 text-[color:var(--accent-primary)]" />
-                                </div>
-                                <h2 className="text-xl font-bold text-[color:var(--text-primary)]">Account Details</h2>
-                            </div>
-                            <div className="bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl p-8 shadow-xl">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-[color:var(--text-primary)]">
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Investor Name</span>
-                                        <span className="text-lg font-medium">{investorData?.name}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Email Address</span>
-                                        <span className="text-lg font-medium">{investorData?.email}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Profit Share %</span>
-                                        <span className="text-lg font-medium text-emerald-400">{investorData?.profitPercent}%</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Capital Invested</span>
-                                        <span className="text-lg font-medium">{formatCurrency(investorData?.capital)}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Current P/L Split</span>
-                                        <span className={`text-lg font-bold ${journalStats?.individualPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                            {formatCurrency(journalStats?.individualPnl)}
-                                        </span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Account ID</span>
-                                        <span className="text-lg font-mono text-[color:var(--text-secondary)]">{currentUser.uid.slice(0, 8)}...</span>
+                                <div className="bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl p-8 shadow-xl">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-[color:var(--text-primary)]">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Investor Name</span>
+                                            <span className="text-lg font-medium">{investorData?.name}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Email Address</span>
+                                            <span className="text-lg font-medium">{investorData?.email}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Profit Share %</span>
+                                            <span className="text-lg font-medium text-emerald-400">{investorData?.profitPercent}%</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Capital Invested</span>
+                                            <span className="text-lg font-medium">{formatCurrency(investorData?.capital)}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Current P/L Split</span>
+                                            <span className={`text-lg font-bold ${journalStats?.individualPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {formatCurrency(journalStats?.individualPnl)}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-xs uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Account ID</span>
+                                            <span className="text-lg font-mono text-[color:var(--text-secondary)]">{currentUser.uid.slice(0, 8)}...</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </>
                     )}
                 </main>
             </div>
