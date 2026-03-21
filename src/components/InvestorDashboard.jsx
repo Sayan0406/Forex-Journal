@@ -716,7 +716,7 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
                                         <td className="p-3 font-medium text-[color:var(--text-primary)]">
                                             <div className="flex flex-col gap-0.5">
                                                 <span>
-                                                    {userRole === 'master' || (inv.email && currentUser?.email && inv.email.toLowerCase() === currentUser.email.toLowerCase())
+                                                    {(userRole === 'master' || userRole === 'subadmin') || (inv.email && currentUser?.email && inv.email.toLowerCase() === currentUser.email.toLowerCase())
                                                         ? inv.name 
                                                         : `Investor ${index + 1}`}
                                                 </span>
