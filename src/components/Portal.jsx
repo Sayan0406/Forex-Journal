@@ -14,7 +14,7 @@ export default function Portal() {
     const [error, setError] = useState('');
     const [investorData, setInvestorData] = useState(null);
     const [journalStats, setJournalStats] = useState(null);
-    const [theme, setTheme] = useState('default');
+    const [theme, setTheme] = useState('theme-midnight');
     const [workspaceName, setWorkspaceName] = useState('Investor Portal');
 
     useEffect(() => {
@@ -66,7 +66,7 @@ export default function Portal() {
     const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
     useEffect(() => {
-        document.body.className = theme === 'default' ? '' : theme;
+        document.body.className = theme;
         if (workspaceName !== 'Investor Portal') {
             document.title = `${workspaceName} - Investor Portal`;
         }
