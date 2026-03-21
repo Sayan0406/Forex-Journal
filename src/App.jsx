@@ -222,56 +222,75 @@ function AdminLayout() {
           </div>
 
           <div className="flex gap-2 items-center">
-            {userRole === 'master' && (
+            {(userRole === 'master' || userRole === 'subadmin') && (
               <>
-                <input
-                  type="file"
-                  id="import-file"
-                  className="hidden"
-                  accept=".json"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      try {
-                        const data = JSON.parse(event.target.result);
-                        if (Array.isArray(data.rows) || Array.isArray(data.investors)) {
-                          if (confirm('This will overwrite current data. Proceed?')) {
-                            if (data.rows) setRows(data.rows);
-                            if (data.investors) setInvestors(data.investors);
-                            if (data.reserveFund !== undefined) setReserveFund(data.reserveFund);
-                            alert('Data imported successfully!');
+                {userRole === 'master' && (
+                  <input
+                    type="file"
+                    id="import-file"
+                    className="hidden"
+                    accept=".json"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        try {
+                          const data = JSON.parse(event.target.result);
+                          if (Array.isArray(data.rows) || Array.isArray(data.investors)) {
+                            if (confirm('This will overwrite current data. Proceed?')) {
+                              if (data.rows) setRows(data.rows);
+                              if (data.investors) setInvestors(data.investors);
+                              if (data.reserveFund !== undefined) setReserveFund(data.reserveFund);
+                              alert('Data imported successfully!');
+                            }
+                          } else {
+                            alert('Invalid format.');
                           }
-                        } else {
-                          alert('Invalid format.');
+                        } catch (err) {
+                          alert('Failed to read file.');
                         }
-                      } catch (err) {
-                        alert('Failed to read file.');
-                      }
-                    };
-                    reader.readAsText(file);
-                    e.target.value = '';
-                  }}
-                />
-                <button
-                  onClick={() => document.getElementById('import-file').click()}
-                  className="btn btn-ghost !px-4 !py-2 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10"
-                  title="Import JSON"
-                >
-                  <div className="flex items-center gap-2">
-                    <Upload className="w-5 h-5" />
-                    <span className="hidden sm:inline">Import</span>
-                  </div>
-                </button>
+                      };
+                      reader.readAsText(file);
+                      e.target.value = '';
+                    }}
+                  />
+                )}
+                {userRole === 'master' && (
+                  <button
+                    onClick={() => document.getElementById('import-file').click()}
+                    className="btn btn-ghost !px-4 !py-2 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10"
+                    title="Import JSON"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Upload className="w-5 h-5" />
+                      <span className="hidden sm:inline">Import</span>
+                    </div>
+                  </button>
+                )}
                 <button
                   onClick={() => {
-                    const data = { rows, investors, reserveFund };
-                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    let dataToExport = { rows, investors, reserveFund };
+                    
+                    if (userRole === 'subadmin') {
+                      // Redact PII for sub-admins
+                      dataToExport.investors = investors.map((inv, idx) => {
+                        const isMe = inv.email && currentUser?.email && inv.email.toLowerCase() === currentUser.email.toLowerCase();
+                        return {
+                          ...inv,
+                          name: isMe ? inv.name : `Investor ${idx + 1}`,
+                          email: isMe ? inv.email : "Hidden for Privacy",
+                          phone: isMe ? inv.phone : "Hidden for Privacy",
+                          upiId: isMe ? inv.upiId : "Hidden for Privacy"
+                        };
+                      });
+                    }
+
+                    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = `Forex_Backup_${new Date().toISOString().split('T')[0]}.json`;
+                    link.download = `Forex_${userRole === 'master' ? 'Full_Backup' : 'Redacted_Export'}_${new Date().toISOString().split('T')[0]}.json`;
                     link.click();
                   }}
                   className="btn btn-ghost !px-4 !py-2 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
