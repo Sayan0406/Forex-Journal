@@ -8,7 +8,7 @@ import { Plus, LayoutDashboard, Trash2, ArrowRight, Pencil, Palette, Check, X } 
 import { formatCurrency } from '../utils/journalUtils';
 
 const THEMES = [
-  { id: 'default', label: 'Midnight', color: '#0f172a' },
+  { id: 'theme-midnight', label: 'Midnight', color: '#0f172a' },
   { id: 'theme-forest', label: 'Forest', color: '#064e3b' },
   { id: 'theme-sunset', label: 'Sunset', color: '#881337' },
   { id: 'theme-light', label: 'Light', color: '#f1f5f9' },
@@ -26,22 +26,22 @@ export default function WorkspacesDashboard() {
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
-  const [selectedTheme, setSelectedTheme] = useState('default');
+  const [selectedTheme, setSelectedTheme] = useState('theme-midnight');
   
   // Lobby-wide Theme
-  const [lobbyTheme, setLobbyTheme] = useState(() => localStorage.getItem('lobby_theme') || 'default');
+  const [lobbyTheme, setLobbyTheme] = useState(() => localStorage.getItem('lobby_theme') || 'theme-midnight');
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   
   // Apply theme to lobby body
   useEffect(() => {
     localStorage.setItem('lobby_theme', lobbyTheme);
-    document.body.className = lobbyTheme === 'default' ? '' : lobbyTheme;
+    document.body.className = lobbyTheme;
   }, [lobbyTheme]);
 
   // Editing state
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
-  const [editTheme, setEditTheme] = useState('default');
+  const [editTheme, setEditTheme] = useState('theme-midnight');
 
   // Fetch workspaces owned by the user or where user is a sub-admin
   const fetchWorkspaces = async () => {
@@ -162,15 +162,15 @@ export default function WorkspacesDashboard() {
       <div className="fixed -top-40 -right-40 w-96 h-96 bg-[color:var(--accent-secondary)]/10 rounded-full blur-3xl pointer-events-none" />
       
       <div className="max-w-6xl mx-auto relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[color:var(--text-primary)] to-[color:var(--text-secondary)] bg-clip-text text-transparent">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 gap-6">
+          <div className="animate-in slide-in-from-left-4 duration-500">
+            <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-[color:var(--text-primary)] via-[color:var(--text-secondary)] to-[color:var(--text-primary)] bg-clip-text text-transparent tracking-tight">
               My Journals
             </h1>
-            <p className="text-[color:var(--text-secondary)] mt-2">Manage your trading workspaces.</p>
+            <p className="text-[color:var(--text-secondary)] mt-2 font-medium opacity-80">Manage your trading workspaces.</p>
           </div>
 
-          <div className="flex gap-3 w-full md:w-auto h-fit">
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <button
                onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
                className="btn bg-[color:var(--bg-tertiary)] hover:bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] text-[color:var(--text-primary)]"
@@ -272,14 +272,14 @@ export default function WorkspacesDashboard() {
             const totalFund = (ws.investors?.reduce((sum, inv) => sum + inv.capital, 0) || 0) + (ws.reserveFund || 0);
 
             return (
-              <div key={ws.id} className={`glass-panel p-0 group flex flex-col hover:-translate-y-1 hover:shadow-2xl transition-all duration-300 ${ws.theme || 'default'}`}>
-                <div className="p-6 flex-1">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-[color:var(--accent-primary)]/10 rounded-xl text-[color:var(--accent-primary)]">
+              <div key={ws.id} className={`glass-panel p-0 group flex flex-col hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 ${ws.theme || 'theme-midnight'} border-2 border-transparent hover:border-[color:var(--accent-primary)]/30 overflow-hidden`}>
+                <div className="p-6 md:p-8 flex-1">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="p-4 bg-[color:var(--accent-primary)]/10 rounded-2xl text-[color:var(--accent-primary)] shadow-inner">
                       <LayoutDashboard className="w-6 h-6" />
                     </div>
                     {ws.ownerId === currentUser.uid && !editingId && (
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                         <button
                           onClick={() => startEditing(ws)}
                           className="text-[color:var(--text-secondary)] hover:text-[color:var(--accent-primary)] p-2 rounded-lg transition-colors hover:bg-[color:var(--accent-primary)]/10"

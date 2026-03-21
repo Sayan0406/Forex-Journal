@@ -15,7 +15,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 const THEMES = [
-  { id: 'default', label: 'Midnight', color: '#0f172a' },
+  { id: 'theme-midnight', label: 'Midnight', color: '#0f172a' },
   { id: 'theme-forest', label: 'Forest', color: '#064e3b' },
   { id: 'theme-sunset', label: 'Sunset', color: '#881337' },
   { id: 'theme-light', label: 'Light', color: '#f1f5f9' },
@@ -41,7 +41,7 @@ function AdminLayout() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
   const { logout, currentUser } = useAuth();
-  const [currentTheme, setCurrentTheme] = useState('default');
+  const [currentTheme, setCurrentTheme] = useState('theme-midnight');
   const [workspaceName, setWorkspaceName] = useState('Forex Journal');
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState('investor');
@@ -142,7 +142,7 @@ function AdminLayout() {
 
   // Theme & Zoom Effects
   useEffect(() => {
-    document.body.className = currentTheme === 'default' ? '' : currentTheme;
+    document.body.className = currentTheme;
     if (workspaceName !== 'Forex Journal') {
       document.title = `${workspaceName} - Admin Dashboard`;
     }
