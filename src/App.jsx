@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Palette, Type, Minus, Plus, LogOut, Home } from 'lucide-react';
+import { LayoutDashboard, Palette, Type, Minus, Plus, LogOut, Home, Download, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './index.css';
 import JournalTable from './components/JournalTable';
@@ -222,6 +222,80 @@ function AdminLayout() {
           </div>
 
           <div className="flex gap-2 items-center">
+            {/* Import / Export Controls (Admins only) */}
+            {(userRole === 'master' || userRole === 'subadmin') && (
+              <>
+                <input
+                  type="file"
+                  id="import-json"
+                  className="hidden"
+                  accept=".json"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      try {
+                        const data = JSON.parse(event.target.result);
+                        if (Array.isArray(data.rows) || Array.isArray(data.investors)) {
+                          if (confirm('Importing this file will overwrite your current cloud data. Continue?')) {
+                            if (data.rows) setRows(data.rows);
+                            if (data.investors) setInvestors(data.investors);
+                            if (data.reserveFund !== undefined) setReserveFund(data.reserveFund);
+                            alert("Data imported successfully. Syncing to cloud...");
+                          }
+                        } else {
+                          alert('Invalid JSON format.');
+                        }
+                      } catch (err) {
+                        alert('Failed to read file.');
+                      }
+                    };
+                    reader.readAsText(file);
+                    e.target.value = '';
+                  }}
+                />
+                <button
+                  onClick={() => document.getElementById('import-json').click()}
+                  className="btn btn-ghost !px-3 !py-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10"
+                  title="Import JSON Data"
+                >
+                  <div className="flex items-center gap-2">
+                    <Upload className="w-5 h-5" />
+                    <span className="hidden lg:inline text-xs font-bold uppercase tracking-wider">Import</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const data = {
+                      rows,
+                      investors,
+                      reserveFund,
+                      exportDate: new Date().toISOString(),
+                      workspaceName
+                    };
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `${workspaceName.replace(/\s+/g, '_')}_Backup_${new Date().toLocaleDateString()}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="btn btn-ghost !px-3 !py-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                  title="Export JSON Backup"
+                >
+                  <div className="flex items-center gap-2">
+                    <Download className="w-5 h-5" />
+                    <span className="hidden lg:inline text-xs font-bold uppercase tracking-wider">Export</span>
+                  </div>
+                </button>
+              </>
+            )}
+
             <button
               onClick={logout}
               className="btn btn-ghost !px-4 !py-2 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"
