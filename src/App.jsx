@@ -130,7 +130,8 @@ function AdminLayout() {
           rows,
           investors,
           reserveFund,
-          subAdmins: subAdminsArray
+          subAdmins: subAdminsArray,
+          updatedAt: new Date().toISOString()
         }, { merge: true });
       } catch (err) {
         console.error("Failed saving to Firestore:", err);

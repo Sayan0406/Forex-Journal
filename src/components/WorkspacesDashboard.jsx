@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, setDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, LayoutDashboard, Trash2, ArrowRight, Pencil, Palette, Check, X } from 'lucide-react';
+import { Plus, LayoutDashboard, Trash2, ArrowRight, Pencil, Palette, Check, X, GripVertical, Clock, ArrowUpDown } from 'lucide-react';
+import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../utils/journalUtils';
 
 const THEMES = [
@@ -43,6 +44,27 @@ export default function WorkspacesDashboard() {
   const [editName, setEditName] = useState('');
   const [editTheme, setEditTheme] = useState('theme-midnight');
 
+  // Sorting state
+  const [sortMethod, setSortMethod] = useState(() => localStorage.getItem('ws_sort_method') || 'position');
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+
+  const sortWorkspaces = (list, method) => {
+    const sorted = [...list];
+    if (method === 'createdAt' || method === 'updatedAt') {
+      return sorted.sort((a, b) => new Date(b[method] || 0) - new Date(a[method] || 0));
+    }
+    if (method === 'name') {
+      return sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+    // Default: position
+    return sorted.sort((a, b) => (a.position || 0) - (b.position || 0));
+  };
+
+  useEffect(() => {
+    localStorage.setItem('ws_sort_method', sortMethod);
+    setWorkspaces(prev => sortWorkspaces(prev, sortMethod));
+  }, [sortMethod]);
+
   // Fetch workspaces owned by the user or where user is a sub-admin
   const fetchWorkspaces = async () => {
     if (!currentUser) return;
@@ -63,7 +85,7 @@ export default function WorkspacesDashboard() {
       });
       
       const fetched = Array.from(fetchedMap.values());
-      setWorkspaces(fetched.sort((a,b) => a.name.localeCompare(b.name)));
+      setWorkspaces(sortWorkspaces(fetched, sortMethod));
     } catch (err) {
       console.error("Error fetching workspaces:", err);
     } finally {
@@ -88,6 +110,7 @@ export default function WorkspacesDashboard() {
       console.log("Generating workspace data...");
       const newId = uuidv4();
       const docRef = doc(db, 'workspaces', newId);
+      const now = new Date().toISOString();
       const newWorkspaceData = {
         name: newWorkspaceName.trim(),
         ownerId: currentUser.uid,
@@ -96,16 +119,19 @@ export default function WorkspacesDashboard() {
         investors: [],
         subAdmins: [],
         reserveFund: 0,
-        createdAt: new Date().toISOString()
+        createdAt: now,
+        updatedAt: now,
+        position: workspaces.length
       };
       
       console.log("Writing to Firestore...", newWorkspaceData);
       await setDoc(docRef, newWorkspaceData);
       console.log("Firestore write resolved!");
       
-      setWorkspaces([...workspaces, { id: newId, ...newWorkspaceData }]);
+      const updatedList = [...workspaces, { id: newId, ...newWorkspaceData }];
+      setWorkspaces(sortWorkspaces(updatedList, sortMethod));
       setNewWorkspaceName('');
-      setSelectedTheme('default');
+      setSelectedTheme('theme-midnight');
       setIsCreating(false);
     } catch (err) {
       console.error("Error creating workspace:", err);
@@ -128,12 +154,15 @@ export default function WorkspacesDashboard() {
     if (!editName.trim()) return;
     try {
       const docRef = doc(db, 'workspaces', id);
+      const now = new Date().toISOString();
       await setDoc(docRef, { 
         name: editName.trim(), 
-        theme: editTheme 
+        theme: editTheme,
+        updatedAt: now
       }, { merge: true });
 
-      setWorkspaces(workspaces.map(ws => ws.id === id ? { ...ws, name: editName.trim(), theme: editTheme } : ws));
+      const updated = workspaces.map(ws => ws.id === id ? { ...ws, name: editName.trim(), theme: editTheme, updatedAt: now } : ws);
+      setWorkspaces(sortWorkspaces(updated, sortMethod));
       setEditingId(null);
     } catch (err) {
       console.error("Error updating workspace:", err);
@@ -171,6 +200,34 @@ export default function WorkspacesDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div className="relative">
+              <button
+                onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                className="btn bg-[color:var(--bg-tertiary)] hover:bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] text-[color:var(--text-primary)]"
+                title="Sort Journals"
+              >
+                <ArrowUpDown className="w-5 h-5" />
+              </button>
+
+              {isSortMenuOpen && (
+                <div className="absolute top-14 right-0 w-48 bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-xl shadow-2xl z-50 overflow-hidden">
+                  <div className="p-2 border-b border-[color:var(--glass-border)] text-[10px] uppercase font-bold text-[color:var(--text-secondary)] px-4 py-2">Sort By</div>
+                  <button onClick={() => { setSortMethod('position'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-[color:var(--bg-tertiary)] ${sortMethod === 'position' ? 'bg-[color:var(--bg-tertiary)] text-[color:var(--accent-primary)] font-bold' : 'text-[color:var(--text-secondary)]'}`}>
+                    <GripVertical className="w-4 h-4" /> Custom Order
+                  </button>
+                  <button onClick={() => { setSortMethod('createdAt'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-[color:var(--bg-tertiary)] ${sortMethod === 'createdAt' ? 'bg-[color:var(--bg-tertiary)] text-[color:var(--accent-primary)] font-bold' : 'text-[color:var(--text-secondary)]'}`}>
+                    <Plus className="w-4 h-4" /> Date Created
+                  </button>
+                  <button onClick={() => { setSortMethod('updatedAt'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-[color:var(--bg-tertiary)] ${sortMethod === 'updatedAt' ? 'bg-[color:var(--bg-tertiary)] text-[color:var(--accent-primary)] font-bold' : 'text-[color:var(--text-secondary)]'}`}>
+                    <Clock className="w-4 h-4" /> Last Modified
+                  </button>
+                  <button onClick={() => { setSortMethod('name'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-[color:var(--bg-tertiary)] ${sortMethod === 'name' ? 'bg-[color:var(--bg-tertiary)] text-[color:var(--accent-primary)] font-bold' : 'text-[color:var(--text-secondary)]'}`}>
+                    <Pencil className="w-4 h-4" /> Name (A-Z)
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
                onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
                className="btn bg-[color:var(--bg-tertiary)] hover:bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] text-[color:var(--text-primary)]"
@@ -265,18 +322,47 @@ export default function WorkspacesDashboard() {
           </form>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Reorder.Group
+          axis="y"
+          values={workspaces}
+          onReorder={async (newOrder) => {
+            if (sortMethod !== 'position') return; // Only allow drag in Custom mode
+            setWorkspaces(newOrder);
+            
+            // Push position updates to Firestore (throttled/batched ideally)
+            const updates = newOrder.map(async (ws, index) => {
+              if (ws.position !== index) {
+                 const docRef = doc(db, 'workspaces', ws.id);
+                 return setDoc(docRef, { position: index }, { merge: true });
+              }
+            });
+            await Promise.all(updates);
+          }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
           {workspaces.map(ws => {
             const rowCount = ws.rows?.length || 0;
             const investorCount = ws.investors?.length || 0;
             const totalFund = (ws.investors?.reduce((sum, inv) => sum + inv.capital, 0) || 0) + (ws.reserveFund || 0);
 
             return (
-              <div key={ws.id} className={`glass-panel p-0 group flex flex-col hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 ${ws.theme || 'theme-midnight'} border-2 border-transparent hover:border-[color:var(--accent-primary)]/30 overflow-hidden`}>
+              <Reorder.Item
+                key={ws.id}
+                value={ws}
+                dragListener={sortMethod === 'position'}
+                className={`glass-panel p-0 group flex flex-col hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 ${ws.theme || 'theme-midnight'} border-2 border-transparent hover:border-[color:var(--accent-primary)]/30 overflow-hidden relative`}
+              >
                 <div className="p-6 md:p-8 flex-1">
                   <div className="flex justify-between items-start mb-6">
-                    <div className="p-4 bg-[color:var(--accent-primary)]/10 rounded-2xl text-[color:var(--accent-primary)] shadow-inner">
-                      <LayoutDashboard className="w-6 h-6" />
+                    <div className="flex items-center gap-4">
+                      {sortMethod === 'position' && (
+                        <div className="cursor-grab active:cursor-grabbing p-1 text-[color:var(--text-secondary)] opacity-40 hover:opacity-100 transition-opacity">
+                          <GripVertical className="w-5 h-5" />
+                        </div>
+                      )}
+                      <div className="p-4 bg-[color:var(--accent-primary)]/10 rounded-2xl text-[color:var(--accent-primary)] shadow-inner">
+                        <LayoutDashboard className="w-6 h-6" />
+                      </div>
                     </div>
                     {ws.ownerId === currentUser.uid && !editingId && (
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
@@ -365,7 +451,7 @@ export default function WorkspacesDashboard() {
                     <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
-              </div>
+              </Reorder.Item>
             );
           })}
 
@@ -380,7 +466,7 @@ export default function WorkspacesDashboard() {
               </button>
             </div>
           )}
-        </div>
+        </Reorder.Group>
       </div>
     </div>
   );
