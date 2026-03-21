@@ -28,6 +28,16 @@ export default function WorkspacesDashboard() {
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState('default');
   
+  // Lobby-wide Theme
+  const [lobbyTheme, setLobbyTheme] = useState(() => localStorage.getItem('lobby_theme') || 'default');
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  
+  // Apply theme to lobby body
+  useEffect(() => {
+    localStorage.setItem('lobby_theme', lobbyTheme);
+    document.body.className = lobbyTheme === 'default' ? '' : lobbyTheme;
+  }, [lobbyTheme]);
+
   // Editing state
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
@@ -160,7 +170,35 @@ export default function WorkspacesDashboard() {
             <p className="text-[color:var(--text-secondary)] mt-2">Manage your trading workspaces.</p>
           </div>
 
-          <div className="flex gap-3 w-full md:w-auto">
+          <div className="flex gap-3 w-full md:w-auto h-fit">
+            <button
+               onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+               className="btn bg-[color:var(--bg-tertiary)] hover:bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] text-[color:var(--text-primary)]"
+               title="Lobby Theme"
+            >
+               <Palette className="w-5 h-5" />
+            </button>
+
+            {isThemeMenuOpen && (
+              <div className="absolute top-24 right-4 md:right-32 w-48 bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-xl shadow-2xl z-50 overflow-hidden">
+                <div className="max-h-[300px] overflow-y-auto">
+                  {THEMES.map(theme => (
+                    <button
+                      key={theme.id}
+                      onClick={() => {
+                        setLobbyTheme(theme.id);
+                        setIsThemeMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-[color:var(--bg-tertiary)] transition-colors ${lobbyTheme === theme.id ? 'text-[color:var(--accent-primary)] font-medium' : 'text-[color:var(--text-secondary)]'}`}
+                    >
+                      <div className="w-4 h-4 rounded-full border border-white/10" style={{ backgroundColor: theme.color }} />
+                      {theme.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button
               onClick={() => setIsCreating(!isCreating)}
               className="btn btn-primary flex-1 md:flex-none whitespace-nowrap shadow-lg shadow-[color:var(--accent-primary)]/20"

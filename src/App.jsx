@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Palette, Type, Minus, Plus, LogOut } from 'lucide-react';
+import { LayoutDashboard, Palette, Type, Minus, Plus, LogOut, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './index.css';
 import JournalTable from './components/JournalTable';
@@ -172,6 +172,13 @@ function AdminLayout() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-[1800px]">
         <header className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between py-6 gap-4">
           <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate('/workspaces')}
+              className="p-2 bg-[color:var(--bg-tertiary)] hover:bg-[color:var(--bg-secondary)] rounded-lg border border-[color:var(--glass-border)] text-[color:var(--text-secondary)] hover:text-[color:var(--accent-primary)] transition-all"
+              title="Back to Journals"
+            >
+              <Home className="w-5 h-5" />
+            </button>
             <div className="p-2 bg-[color:var(--accent-primary)]/20 rounded-lg border border-[color:var(--accent-primary)]/30">
               <LayoutDashboard className="text-[color:var(--accent-primary)] w-8 h-8" />
             </div>
