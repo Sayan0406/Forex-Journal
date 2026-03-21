@@ -509,19 +509,19 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
               
               <div className="mb-6">
                 <h3 className="text-xl font-bold text-[color:var(--text-primary)] mb-1">
-                  {ownerName || 'Admin'}
+                  {ownerName || 'Master Admin'}
                 </h3>
-                {ownerEmail && (
+                {userRole === 'master' && ownerEmail && (
                   <p className="text-xs text-[color:var(--text-secondary)] font-mono opacity-80 mb-1 flex items-center gap-1">
                     <Mail className="w-3 h-3" /> {ownerEmail}
                   </p>
                 )}
-                {ownerPhone && (
+                {userRole === 'master' && ownerPhone && (
                   <p className="text-xs text-[color:var(--text-secondary)] font-mono opacity-80 mb-1 flex items-center gap-1">
                     <Phone className="w-3 h-3" /> {ownerPhone}
                   </p>
                 )}
-                {ownerUpi && (
+                {userRole === 'master' && ownerUpi && (
                   <p className="text-xs text-[color:var(--text-secondary)] font-mono opacity-80 mb-1 flex items-center gap-1">
                     <QrCode className="w-3 h-3" /> {ownerUpi}
                   </p>
@@ -716,9 +716,9 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
                                         <td className="p-3 font-medium text-[color:var(--text-primary)]">
                                             <div className="flex flex-col gap-0.5">
                                                 <span>
-                                                    {(userRole === 'master' || userRole === 'subadmin') || (inv.email && currentUser?.email && inv.email.toLowerCase() === currentUser.email.toLowerCase())
+                                                    {userRole === 'master' 
                                                         ? inv.name 
-                                                        : `Investor ${index + 1}`}
+                                                        : (inv.email && currentUser?.email && inv.email.toLowerCase() === currentUser.email.toLowerCase() ? inv.name : `Investor ${index + 1}`)}
                                                 </span>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     {userRole !== 'master' && (inv.email && currentUser?.email && inv.email.toLowerCase() === currentUser.email.toLowerCase()) && (
@@ -730,7 +730,7 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
                                         </td>
                                         <td className="p-3 text-[color:var(--text-secondary)]">
                                             <div className="flex flex-col gap-1">
-                                                {userRole !== 'investor' ? (
+                                                {userRole === 'master' ? (
                                                     <>
                                                         {inv.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {inv.email}</span>}
                                                         {inv.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {inv.phone}</span>}
