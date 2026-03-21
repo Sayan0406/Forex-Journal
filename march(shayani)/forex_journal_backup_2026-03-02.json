@@ -1,0 +1,94 @@
+{
+  "rows": [],
+  "investors": [
+    {
+      "id": "f572f6e9-fc4b-4bea-952a-6a5789fb0026",
+      "name": "Sayan Sarkar",
+      "capital": 25000,
+      "profitPercent": 80,
+      "upiId": "7029122273@superyes",
+      "phone": "7029122273",
+      "email": "20062004pokai@gmail.com"
+    },
+    {
+      "id": "c3338340-4df3-4fbf-8831-4f5eba449c8e",
+      "name": "Koushik",
+      "capital": 0,
+      "profitPercent": 5,
+      "upiId": "-",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": "ed90a99f-d90f-4542-b3e8-ca0209e4d5e2",
+      "name": "Shayani ",
+      "capital": 5000,
+      "profitPercent": 15,
+      "upiId": "UPI ID : 7439961913.etb@icici",
+      "phone": "7439961913",
+      "email": ""
+    }
+  ],
+  "columns": [
+    {
+      "id": "date",
+      "label": "Date",
+      "type": "date"
+    },
+    {
+      "id": "symbol",
+      "label": "Symbol",
+      "type": "select",
+      "options": [
+        "XAUUSD",
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "AUDUSD",
+        "USDCAD",
+        "BTCUSD",
+        "ETHUSD",
+        "SOLUSD",
+        "XRPUSD",
+        "US30",
+        "NAS100",
+        "SPX500",
+        "GER40"
+      ]
+    },
+    {
+      "id": "type",
+      "label": "Type",
+      "type": "select",
+      "options": [
+        "Buy",
+        "Sell"
+      ]
+    },
+    {
+      "id": "lot",
+      "label": "Lot",
+      "type": "number"
+    },
+    {
+      "id": "entry",
+      "label": "Entry",
+      "type": "number"
+    },
+    {
+      "id": "exit",
+      "label": "Exit",
+      "type": "number"
+    },
+    {
+      "id": "pnl",
+      "label": "P/L",
+      "type": "number"
+    },
+    {
+      "id": "notes",
+      "label": "Notes",
+      "type": "text"
+    }
+  ]
+}

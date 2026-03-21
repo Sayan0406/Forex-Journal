@@ -41,7 +41,8 @@ function AdminLayout() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
   const { logout, currentUser } = useAuth();
-  const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem('theme') || 'default');
+  const [currentTheme, setCurrentTheme] = useState('default');
+  const [workspaceName, setWorkspaceName] = useState('Forex Journal');
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState('investor');
 
@@ -94,6 +95,8 @@ function AdminLayout() {
           if (data.rows) setRows(data.rows);
           if (data.investors) setInvestors(data.investors);
           if (data.reserveFund !== undefined) setReserveFund(data.reserveFund);
+          if (data.theme) setCurrentTheme(data.theme);
+          if (data.name) setWorkspaceName(data.name);
         } else {
           // Navigate to lobby if workspace id is broken or absent
           navigate('/workspaces');
@@ -139,9 +142,23 @@ function AdminLayout() {
 
   // Theme & Zoom Effects
   useEffect(() => {
-    localStorage.setItem('theme', currentTheme);
     document.body.className = currentTheme === 'default' ? '' : currentTheme;
-  }, [currentTheme]);
+    if (workspaceName !== 'Forex Journal') {
+      document.title = `${workspaceName} - Admin Dashboard`;
+    }
+  }, [currentTheme, workspaceName]);
+
+  const handleThemeChange = async (themeId) => {
+    setCurrentTheme(themeId);
+    if (userRole === 'master') {
+      try {
+        const docRef = doc(db, 'workspaces', workspaceId);
+        await setDoc(docRef, { theme: themeId }, { merge: true });
+      } catch (err) {
+        console.error("Failed saving theme to cloud:", err);
+      }
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('zoom_level', zoomLevel);
@@ -160,9 +177,9 @@ function AdminLayout() {
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-[color:var(--text-primary)] to-[color:var(--text-secondary)] bg-clip-text text-transparent">
-                Forex Journal
+                {workspaceName}
               </h1>
-              <p className="text-[color:var(--text-secondary)] text-sm">Professional Trade Tracker</p>
+              <p className="text-[color:var(--text-secondary)] text-sm">Professional Trading Journal</p>
             </div>
           </div>
 
@@ -273,7 +290,7 @@ function AdminLayout() {
                         <button
                           key={theme.id}
                           onClick={() => {
-                            setCurrentTheme(theme.id);
+                            handleThemeChange(theme.id);
                             setIsThemeMenuOpen(false);
                           }}
                           className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-[color:var(--bg-tertiary)] transition-colors ${currentTheme === theme.id ? 'text-[color:var(--accent-primary)] font-medium' : 'text-[color:var(--text-secondary)]'}`}

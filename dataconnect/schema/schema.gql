@@ -1,0 +1,21 @@
+type App @table {
+  name: String!
+  description: String!
+}
+type Feature @table {
+  name: String!
+  description: String!
+  app: App!
+}
+type Audience @table {
+  name: String!
+  description: String!
+}
+type AppAudience @table(key: ["app", "audience"]) {
+  app: App!
+  audience: Audience!
+}
+type UserInteraction @table {
+  description: String!
+  feature: Feature
+}

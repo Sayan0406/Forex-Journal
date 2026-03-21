@@ -14,6 +14,8 @@ export default function Portal() {
     const [error, setError] = useState('');
     const [investorData, setInvestorData] = useState(null);
     const [journalStats, setJournalStats] = useState(null);
+    const [theme, setTheme] = useState('default');
+    const [workspaceName, setWorkspaceName] = useState('Investor Portal');
 
     useEffect(() => {
         async function fetchTraderData() {
@@ -28,6 +30,8 @@ export default function Portal() {
                     
                     if (me) {
                         setInvestorData(me);
+                        if (data.theme) setTheme(data.theme);
+                        if (data.name) setWorkspaceName(data.name);
                         const { pnl } = calculateTotals(data.rows || []);
                         
                         const splitPercentage = parseFloat(me.profitPercent || 0);
@@ -61,6 +65,13 @@ export default function Portal() {
 
     const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
+    useEffect(() => {
+        document.body.className = theme === 'default' ? '' : theme;
+        if (workspaceName !== 'Investor Portal') {
+            document.title = `${workspaceName} - Investor Portal`;
+        }
+    }, [theme, workspaceName]);
+
     return (
         <div className="min-h-screen transition-colors duration-300 bg-[color:var(--bg-primary)]">
             <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-[1800px]">
@@ -71,7 +82,7 @@ export default function Portal() {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold bg-gradient-to-r from-[color:var(--text-primary)] to-[color:var(--text-secondary)] bg-clip-text text-transparent">
-                                Investor Portal
+                                {workspaceName}
                             </h1>
                             <p className="text-[color:var(--text-secondary)] text-sm">Welcome back, {investorData?.name || currentUser.displayName}</p>
                         </div>

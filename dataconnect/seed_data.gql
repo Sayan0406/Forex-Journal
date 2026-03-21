@@ -1,0 +1,30 @@
+mutation SeedData @transaction @auth(level: PUBLIC, insecureReason: "This is for seeding development data and can be public for now.") {
+  app1: app_insert(data: {
+    name: "Forex Journal App",
+    description: "An app for tracking forex trades."
+  })
+  app2: app_insert(data: {
+    name: "Crypto Tracker",
+    description: "A comprehensive cryptocurrency tracking application."
+  })
+  audience1: audience_insert(data: {
+    name: "Beginner Traders",
+    description: "New users learning about forex and crypto trading."
+  })
+  audience2: audience_insert(data: {
+    name: "Experienced Investors",
+    description: "Users with significant experience in financial markets."
+  })
+  appAudience1: appAudience_insert(data: {
+    appId_expr: "mutation.app1.id",
+    audienceId_expr: "mutation.audience1.id"
+  })
+  appAudience2: appAudience_insert(data: {
+    appId_expr: "mutation.app1.id",
+    audienceId_expr: "mutation.audience2.id"
+  })
+  appAudience3: appAudience_insert(data: {
+    appId_expr: "mutation.app2.id",
+    audienceId_expr: "mutation.audience1.id"
+  })
+}

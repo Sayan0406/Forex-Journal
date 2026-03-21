@@ -1,0 +1,40 @@
+query AllApps @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  apps {
+    id
+    name
+    description
+  }
+}
+
+query AppDetails($appId: UUID!) @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  app(id: $appId) {
+    id
+    name
+    description
+    features_on_app {
+      id
+      name
+      description
+    }
+    audiences_via_AppAudience {
+      id
+      name
+      description
+    }
+  }
+}
+
+mutation CreateApp($name: String!, $description: String!) @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  app_insert(data: {
+    name: $name,
+    description: $description
+  })
+}
+
+mutation AddFeatureToApp($appId: UUID!, $featureName: String!, $featureDescription: String!) @auth(level: USER) {
+  feature_insert(data: {
+    appId: $appId,
+    name: $featureName,
+    description: $featureDescription
+  })
+}
