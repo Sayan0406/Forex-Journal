@@ -202,7 +202,7 @@ function AdminLayout() {
                   {workspaceName}
                 </h1>
                 {userRole === 'master' && (
-                  <span className="bg-amber-500/10 text-amber-500 text-[10px] font-black px-2 py-0.5 rounded border border-amber-500/20 tracking-widest uppercase shadow-sm shadow-amber-500/5">Master Trader</span>
+                  <span className="bg-amber-500/10 text-amber-500 text-[10px] font-black px-2 py-0.5 rounded border border-amber-500/20 tracking-widest uppercase shadow-sm shadow-amber-500/5">Master Admin</span>
                 )}
                 {userRole === 'subadmin' && (
                   <span className="bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-2 py-0.5 rounded border border-indigo-500/20 tracking-widest uppercase shadow-sm shadow-indigo-500/5">Sub-Admin</span>

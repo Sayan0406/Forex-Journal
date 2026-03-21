@@ -496,7 +496,7 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
 
             {/* Aggregates */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                {/* Master Trader Info (New) - Spans 2 columns on large screens to balance stats */}
+                {/* Master Admin Info (New) - Spans 2 columns on large screens to balance stats */}
                 {(userRole === 'master' || userRole === 'subadmin') && (
                     <div className="lg:col-span-4 glass-panel p-6 border-l-4 border-l-amber-500 bg-amber-500/5 relative overflow-hidden group mb-2">
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all duration-500" />
@@ -505,7 +505,7 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
                 <div className="p-4 bg-amber-500/10 rounded-2xl text-amber-500 shadow-inner">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
-                <span className="bg-amber-500 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase">Master Trader</span>
+                <span className="bg-amber-500 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase">Master Admin</span>
               </div>
               
               <div className="mb-6">
