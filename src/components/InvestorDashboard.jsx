@@ -332,7 +332,7 @@ const ReserveFundModal = ({ reserveFund, setReserveFund, totalInvestedCapital, o
     );
 };
 
-export default function InvestorDashboard({ userRole = 'master', workspaceId, totalPnL, investors, setInvestors, rows = [], reserveFund = 0, setReserveFund, traderId, ownerName, ownerEmail }) {
+export default function InvestorDashboard({ userRole = 'master', workspaceId, totalPnL, investors, setInvestors, rows = [], reserveFund = 0, setReserveFund, traderId, ownerName, ownerEmail, ownerPhone, ownerUpi, onUpdateOwnerInfo }) {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const { currentUser } = useAuth();
@@ -512,13 +512,23 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
                   {ownerName || 'Admin'}
                 </h3>
                 {ownerEmail && (
-                  <p className="text-xs text-[color:var(--text-secondary)] font-mono opacity-80">
-                    {ownerEmail}
+                  <p className="text-xs text-[color:var(--text-secondary)] font-mono opacity-80 mb-1 flex items-center gap-1">
+                    <Mail className="w-3 h-3" /> {ownerEmail}
+                  </p>
+                )}
+                {ownerPhone && (
+                  <p className="text-xs text-[color:var(--text-secondary)] font-mono opacity-80 mb-1 flex items-center gap-1">
+                    <Phone className="w-3 h-3" /> {ownerPhone}
+                  </p>
+                )}
+                {ownerUpi && (
+                  <p className="text-xs text-[color:var(--text-secondary)] font-mono opacity-80 mb-1 flex items-center gap-1">
+                    <QrCode className="w-3 h-3" /> {ownerUpi}
                   </p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[color:var(--glass-border)]">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-[color:var(--glass-border)]">
                 <div>
                   <p className="text-[10px] uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Account Role</p>
                   <p className="text-sm font-medium text-amber-500">Workspace Owner</p>
@@ -527,6 +537,23 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
                   <p className="text-[10px] uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Permissions</p>
                   <p className="text-sm font-medium text-[color:var(--text-primary)]">Full Access</p>
                 </div>
+                {userRole === 'master' && (
+                  <div className="lg:col-span-2 flex justify-end items-end">
+                    <button 
+                      onClick={() => {
+                        const phone = prompt("Enter your public phone number:", ownerPhone || "");
+                        const upi = prompt("Enter your public UPI ID:", ownerUpi || "");
+                        if (phone !== null || upi !== null) {
+                           // This will trigger the reactive sync in App.jsx if we pass these up
+                           onUpdateOwnerInfo && onUpdateOwnerInfo({ phone, upi });
+                        }
+                      }}
+                      className="text-[10px] font-bold text-amber-500 hover:text-amber-400 flex items-center gap-1 px-2 py-1 bg-amber-500/10 rounded"
+                    >
+                      <Settings className="w-3 h-3" /> Edit Profile
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -703,7 +730,7 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
                                         </td>
                                         <td className="p-3 text-[color:var(--text-secondary)]">
                                             <div className="flex flex-col gap-1">
-                                                {(userRole === 'master' || userRole === 'subadmin') ? (
+                                                {userRole !== 'investor' ? (
                                                     <>
                                                         {inv.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {inv.email}</span>}
                                                         {inv.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {inv.phone}</span>}

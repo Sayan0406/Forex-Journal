@@ -45,6 +45,8 @@ function AdminLayout() {
   const [workspaceName, setWorkspaceName] = useState('Forex Journal');
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
+  const [ownerPhone, setOwnerPhone] = useState('');
+  const [ownerUpi, setOwnerUpi] = useState('');
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState('investor');
 
@@ -101,6 +103,8 @@ function AdminLayout() {
           if (data.name) setWorkspaceName(data.name);
           if (data.ownerName) setOwnerName(data.ownerName);
           if (data.ownerEmail) setOwnerEmail(data.ownerEmail);
+          if (data.ownerPhone) setOwnerPhone(data.ownerPhone);
+          if (data.ownerUpi) setOwnerUpi(data.ownerUpi);
 
           // Backfill owner metadata if missing and user is master
           if (role === 'master' && !data.ownerName) {
@@ -144,6 +148,8 @@ function AdminLayout() {
           investors,
           reserveFund,
           subAdmins: subAdminsArray,
+          ownerPhone,
+          ownerUpi,
           updatedAt: new Date().toISOString()
         }, { merge: true });
       } catch (err) {
@@ -308,6 +314,12 @@ function AdminLayout() {
             setReserveFund={setReserveFund} 
             ownerName={ownerName}
             ownerEmail={ownerEmail}
+            ownerPhone={ownerPhone}
+            ownerUpi={ownerUpi}
+            onUpdateOwnerInfo={({ phone, upi }) => {
+              if (phone !== undefined) setOwnerPhone(phone);
+              if (upi !== undefined) setOwnerUpi(upi);
+            }}
           />
           <JournalTable
             userRole={userRole}
