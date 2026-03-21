@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Download, FileSpreadsheet, X, List, Layers, ChevronRight, ChevronDown, Filter } from 'lucide-react';
+import { Plus, Trash2, Download, FileSpreadsheet, X, List, Layers, ChevronRight, ChevronDown, Filter, ArrowUpDown, ClipboardPaste, Undo } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import Modal from './Modal';
-import { groupTrades, formatCurrency } from '../utils/journalUtils';
-import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import AiImportModal from './AiImportModal';
+import { groupTrades, formatCurrency, calculateTotals } from '../utils/journalUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SYMBOL_OPTIONS = [
@@ -87,7 +85,7 @@ const AccordionItem = ({ node, children, defaultOpen = false }) => {
     );
 };
 
-export default function JournalTable({ rows, setRows, investors }) {
+export default function JournalTable({ userRole = 'master', rows, setRows, investors }) {
     const [columns, setColumns] = useState(() => {
         const saved = localStorage.getItem('journal_columns');
         return saved ? JSON.parse(saved) : DEFAULT_COLUMNS;
@@ -96,7 +94,10 @@ export default function JournalTable({ rows, setRows, investors }) {
     const [viewMode, setViewMode] = useState('table'); // 'table' | 'hierarchy'
     const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
     const [newColumn, setNewColumn] = useState({ label: '', type: 'text' });
+    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [filterOutcome, setFilterOutcome] = useState('all'); // 'all', 'win', 'loss', 'breakeven'
+    const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
+    const [deletedRows, setDeletedRows] = useState([]);
 
     // Processed Data (Filter -> Sort)
     const processedRows = useMemo(() => {
@@ -113,18 +114,41 @@ export default function JournalTable({ rows, setRows, investors }) {
             });
         }
 
-        // 2. Sort by Date (Oldest First)
+        // 2. Sort by Date
         result.sort((a, b) => {
             const dateA = new Date(a.date || 0);
             const dateB = new Date(b.date || 0);
-            return dateA - dateB;
+            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
         });
 
         return result;
-    }, [rows, filterOutcome]);
+    }, [rows, filterOutcome, sortOrder]);
 
     // Grouped Data Memos (uses processed rows)
     const groupedData = useMemo(() => groupTrades(processedRows), [processedRows]);
+
+    const { pnl: totalPnL } = useMemo(() => calculateTotals(processedRows), [processedRows]);
+
+    const tradeStats = useMemo(() => {
+        if (!processedRows.length) return null;
+        let wins = 0;
+        let best = -Infinity;
+        let worst = Infinity;
+        
+        processedRows.forEach(r => {
+            const p = parseFloat(r.pnl) || 0;
+            if (p > 0) wins++;
+            if (p > best) best = p;
+            if (p < worst) worst = p;
+        });
+
+        return {
+            total: processedRows.length,
+            winRate: ((wins / processedRows.length) * 100).toFixed(1),
+            best: best === -Infinity ? 0 : best,
+            worst: worst === Infinity ? 0 : worst
+        };
+    }, [processedRows]);
 
     useEffect(() => {
         localStorage.setItem('journal_columns', JSON.stringify(columns));
@@ -186,29 +210,6 @@ export default function JournalTable({ rows, setRows, investors }) {
         ));
     };
 
-    const exportXLSX = () => {
-        const ws = XLSX.utils.json_to_sheet(processedRows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Journal");
-        XLSX.writeFile(wb, "forex_journal.xlsx");
-    };
-
-    const exportPDF = () => {
-        const doc = new jsPDF();
-        const tableColumn = ["Sl. No.", ...columns.map(col => col.label)];
-        const tableRows = processedRows.map((row, index) => [
-            index + 1,
-            ...columns.map(col => row[col.id] || '')
-        ]);
-        autoTable(doc, {
-            head: [tableColumn],
-            body: tableRows,
-            styles: { fontSize: 8 },
-            theme: 'grid'
-        });
-        doc.save("forex_journal.pdf");
-    };
-
     // Render Table Row Helper
     const renderRow = (row, index) => (
         <tr key={row.id} className="border-b border-[color:var(--bg-tertiary)]/50 hover:bg-[color:var(--bg-tertiary)]/30 transition-colors group">
@@ -232,7 +233,7 @@ export default function JournalTable({ rows, setRows, investors }) {
                                 <select
                                     value={row[col.id] || ''}
                                     onChange={(e) => handleCellChange(row.id, col.id, e.target.value)}
-                                    className={`appearance-none bg-transparent border-none font-medium focus:ring-0 w-full cursor-pointer outline-none pl-2 pr-8 py-1 rounded min-w-[140px] ${row[col.id] === 'Buy' ? 'text-emerald-400 bg-emerald-400/10' :
+                                    className={`appearance-none bg-transparent border-none font-medium focus:ring-0 w-full cursor-pointer outline-none pl-2 pr-8 py-1 rounded min-w-[100px] ${row[col.id] === 'Buy' ? 'text-emerald-400 bg-emerald-400/10' :
                                         row[col.id] === 'Sell' ? 'text-rose-400 bg-rose-400/10' : 'text-[color:var(--text-primary)]'
                                         }`}
                                 >
@@ -247,21 +248,23 @@ export default function JournalTable({ rows, setRows, investors }) {
                                 type={col.type}
                                 value={row[col.id] || ''}
                                 onChange={(e) => handleCellChange(row.id, col.id, e.target.value)}
-                                className={`bg-transparent border-none w-full focus:ring-1 focus:ring-[color:var(--accent-primary)]/50 rounded px-1 outline-none min-w-[140px] ${cellColorClass}`}
+                                className={`bg-transparent border-none w-full focus:ring-1 focus:ring-[color:var(--accent-primary)]/50 rounded px-1 outline-none min-w-[60px] lg:min-w-[80px] ${cellColorClass}`}
                                 placeholder="..."
                             />
                         )}
                     </td>
                 );
             })}
-            <td className="p-4 text-center sticky right-0">
-                <button
-                    onClick={() => handleDeleteRow(row.id)}
-                    className="text-[color:var(--text-secondary)] hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 p-2 rounded-full hover:bg-[color:var(--bg-tertiary)]/50"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
-            </td>
+            {userRole === 'master' && (
+                <td className="p-4 text-center sticky right-0">
+                    <button
+                        onClick={() => handleDeleteRow(row.id)}
+                        className="text-[color:var(--text-secondary)] hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 p-2 rounded-full hover:bg-[color:var(--bg-tertiary)]/50"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </td>
+            )}
         </tr>
     );
 
@@ -290,6 +293,18 @@ export default function JournalTable({ rows, setRows, investors }) {
 
                     <div className="h-6 w-px bg-white/10 hidden sm:block mx-2"></div>
 
+                    {/* Sort Toggle */}
+                    <button
+                        onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                        className="flex items-center gap-2 bg-[color:var(--bg-secondary)]/40 px-3 py-2 text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] rounded-lg border border-[color:var(--glass-border)] hover:bg-[color:var(--bg-tertiary)]/50 transition-all text-sm h-[42px]"
+                        title={sortOrder === 'asc' ? "Sort: Oldest First" : "Sort: Newest First"}
+                    >
+                        <ArrowUpDown className="w-4 h-4" />
+                        <span className="hidden sm:inline whitespace-nowrap">{sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}</span>
+                    </button>
+
+                    <div className="h-6 w-px bg-white/10 hidden sm:block mx-2"></div>
+
                     {/* View Mode Toggle */}
                     <div className="flex items-center gap-1 bg-[color:var(--bg-secondary)]/40 p-1 rounded-lg border border-[color:var(--glass-border)]">
                         <button
@@ -312,19 +327,58 @@ export default function JournalTable({ rows, setRows, investors }) {
 
                     {/* Actions */}
                     <div className="flex gap-2">
-                        <button onClick={exportXLSX} className="btn btn-ghost text-sm p-2" title="Export CSV">
-                            <FileSpreadsheet className="w-5 h-5" />
+                        {(userRole === 'master' || userRole === 'subadmin') && deletedRows.length > 0 && (
+                            <button onClick={() => {
+                                setRows(deletedRows);
+                                setDeletedRows([]);
+                            }} className="btn text-sm whitespace-nowrap bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40" title="Undo Delete All">
+                                <Undo className="w-4 h-4 sm:mr-1.5" />
+                                <span className="hidden sm:inline">Undo</span>
+                            </button>
+                        )}
+                        {(userRole === 'master' || userRole === 'subadmin') && (
+                                <button onClick={() => {
+                                    if (rows.length > 0 && confirm('Are you sure you want to delete ALL trades? You can undo this action immediately after.')) {
+                                        setDeletedRows([...rows]);
+                                        setRows([]);
+                                    }
+                                }} className="btn text-sm whitespace-nowrap bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40" title="Delete All Trades">
+                                    <Trash2 className="w-4 h-4 sm:mr-1.5" />
+                                    <span className="hidden sm:inline">Delete All</span>
+                                </button>
+                        )}
+                        <button onClick={() => setIsAiModalOpen(true)} className="btn text-sm whitespace-nowrap bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/40" title="Paste Import">
+                            <ClipboardPaste className="w-4 h-4 sm:mr-1.5" />
+                            <span className="hidden sm:inline">Paste Import</span>
                         </button>
-                        <button onClick={exportPDF} className="btn btn-ghost text-sm p-2" title="Export PDF">
-                            <Download className="w-5 h-5" />
-                        </button>
-                        <button onClick={handleAddRow} className="btn btn-primary text-sm whitespace-nowrap">
-                            <Plus className="w-5 h-5 mr-1" />
-                            New Trade
+                        <button onClick={handleAddRow} className="btn btn-primary text-sm whitespace-nowrap" title="New Trade">
+                            <Plus className="w-5 h-5 sm:mr-1" />
+                            <span className="hidden sm:inline">New Trade</span>
                         </button>
                     </div>
                 </div>
             </div>
+
+            {tradeStats && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 animate-in slide-in-from-top-4 fade-in duration-300">
+                    <div className="bg-[color:var(--bg-secondary)]/40 border border-[color:var(--glass-border)] rounded-xl p-3 flex flex-col items-center justify-center text-center">
+                        <span className="text-[color:var(--text-secondary)] text-[10px] font-bold uppercase tracking-wider mb-1">Win Rate</span>
+                        <span className="text-lg font-bold text-emerald-400">{tradeStats.winRate}%</span>
+                    </div>
+                    <div className="bg-[color:var(--bg-secondary)]/40 border border-[color:var(--glass-border)] rounded-xl p-3 flex flex-col items-center justify-center text-center">
+                        <span className="text-[color:var(--text-secondary)] text-[10px] font-bold uppercase tracking-wider mb-1">Total Trades</span>
+                        <span className="text-lg font-bold text-[color:var(--text-primary)]">{tradeStats.total}</span>
+                    </div>
+                    <div className="bg-[color:var(--bg-secondary)]/40 border border-[color:var(--glass-border)] rounded-xl p-3 flex flex-col items-center justify-center text-center">
+                        <span className="text-[color:var(--text-secondary)] text-[10px] font-bold uppercase tracking-wider mb-1">Best Trade</span>
+                        <span className="text-lg font-bold text-emerald-400">+{formatCurrency(tradeStats.best)}</span>
+                    </div>
+                    <div className="bg-[color:var(--bg-secondary)]/40 border border-[color:var(--glass-border)] rounded-xl p-3 flex flex-col items-center justify-center text-center">
+                        <span className="text-[color:var(--text-secondary)] text-[10px] font-bold uppercase tracking-wider mb-1">Worst Trade</span>
+                        <span className="text-lg font-bold text-rose-400">{formatCurrency(tradeStats.worst)}</span>
+                    </div>
+                </div>
+            )}
 
             <div className="overflow-x-auto min-h-[400px]">
                 {viewMode === 'hierarchy' ? (
@@ -361,12 +415,13 @@ export default function JournalTable({ rows, setRows, investors }) {
                         )}
                     </div>
                 ) : (
-                    <table className="w-full border-collapse text-left">
+                    <>
+                    <table className="hidden md:table w-full border-collapse text-left">
                         <thead>
                             <tr className="border-b border-[color:var(--glass-border)] text-[color:var(--text-secondary)] text-sm uppercase tracking-wider">
                                 <th className="p-4 w-10 text-center font-medium">#</th>
                                 {columns.map(col => (
-                                    <th key={col.id} className="p-4 font-medium group relative min-w-[160px]">
+                                    <th key={col.id} className="p-4 font-medium group relative min-w-[100px] lg:min-w-[120px]">
                                         <div className="flex items-center justify-between gap-2">
                                             {col.label}
                                             <button
@@ -398,10 +453,100 @@ export default function JournalTable({ rows, setRows, investors }) {
                                     </td>
                                 </tr>
                             ) : (
-                                processedRows.map((row, index) => renderRow(row, index))
+                                <>
+                                    {processedRows.map((row, index) => renderRow(row, index))}
+                                    <tr className="border-t-2 border-[color:var(--glass-border)] bg-[color:var(--bg-tertiary)]/30">
+                                        <td className="p-4"></td>
+                                        {columns.map((col, i) => {
+                                            if (col.id === 'pnl') {
+                                                const val = parseFloat(totalPnL);
+                                                let cellColorClass = 'text-[color:var(--text-primary)]';
+                                                if (val > 0) cellColorClass = 'text-emerald-400 font-bold';
+                                                else if (val < 0) cellColorClass = 'text-rose-400 font-bold';
+                                                else cellColorClass = 'text-[color:var(--text-secondary)] font-bold';
+                                                return (
+                                                    <td key={col.id} className={`p-4 ${cellColorClass} whitespace-nowrap`}>
+                                                        {val >= 0 ? '+' : ''}{formatCurrency(totalPnL)}
+                                                    </td>
+                                                );
+                                            }
+                                            if (col.id === columns[0].id && col.id !== 'pnl') {
+                                                return <td key={col.id} className="p-4 font-bold text-[color:var(--text-primary)] whitespace-nowrap text-right pr-4">Total P/L</td>;
+                                            }
+                                            return <td key={col.id} className="p-4"></td>;
+                                        })}
+                                        <td className="p-4 sticky right-0"></td>
+                                    </tr>
+                                </>
                             )}
                         </tbody>
                     </table>
+
+                    {/* Mobile Card Layout */}
+                    <div className="md:hidden flex flex-col gap-4 pb-4">
+                        {processedRows.length === 0 ? (
+                            <div className="p-8 text-center text-slate-500 bg-[color:var(--bg-secondary)]/30 rounded-lg border border-[color:var(--glass-border)]">
+                                {filterOutcome !== 'all' ? 'No trades match this filter.' : 'No trades recorded yet.'}
+                            </div>
+                        ) : (
+                            processedRows.map((row) => {
+                                const pnl = parseFloat(row.pnl || 0);
+                                const pnlClass = pnl > 0 ? 'text-emerald-400' : pnl < 0 ? 'text-rose-400' : 'text-[color:var(--text-secondary)]';
+                                return (
+                                    <div key={row.id} className="bg-[color:var(--bg-secondary)]/60 rounded-xl p-4 border border-[color:var(--glass-border)] relative shadow-sm">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${row.type === 'Buy' ? 'bg-emerald-400/10 text-emerald-400' : row.type === 'Sell' ? 'bg-rose-400/10 text-rose-400' : 'bg-slate-500/10 text-slate-400'}`}>
+                                                    {row.type || 'N/A'}
+                                                </span>
+                                                <span className="font-bold text-[color:var(--text-primary)]">{row.symbol || 'Symbol'}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteRow(row.id)}
+                                                className="text-[color:var(--text-secondary)] hover:text-red-400 p-1 bg-[color:var(--bg-tertiary)]/50 rounded-full"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-y-3 text-sm mb-4 bg-[color:var(--bg-tertiary)]/30 p-3 rounded-lg">
+                                            <div className="flex flex-col">
+                                                <span className="text-[color:var(--text-secondary)] text-[10px] uppercase">Date</span>
+                                                <span className="text-[color:var(--text-primary)] font-medium">{row.date || '-'}</span>
+                                            </div>
+                                            <div className="flex flex-col text-right">
+                                                <span className="text-[color:var(--text-secondary)] text-[10px] uppercase">Lot Size</span>
+                                                <span className="text-[color:var(--text-primary)] font-medium">{row.lot || '-'}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[color:var(--text-secondary)] text-[10px] uppercase">Entry</span>
+                                                <span className="text-[color:var(--text-primary)] font-medium">{row.entry || '-'}</span>
+                                            </div>
+                                            <div className="flex flex-col text-right">
+                                                <span className="text-[color:var(--text-secondary)] text-[10px] uppercase">Exit</span>
+                                                <span className="text-[color:var(--text-primary)] font-medium">{row.exit || '-'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="pt-3 border-t border-[color:var(--glass-border)] flex justify-between items-center">
+                                            <span className="text-[color:var(--text-secondary)] text-sm font-medium">Profit/Loss</span>
+                                            <span className={`text-lg font-bold ${pnlClass}`}>
+                                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                        
+                        {processedRows.length > 0 && (
+                            <div className="bg-[color:var(--bg-secondary)] rounded-xl p-4 border border-[color:var(--glass-border)] flex justify-between items-center shadow-lg">
+                                <span className="text-[color:var(--text-primary)] font-bold">Total P/L</span>
+                                <span className={`text-xl font-bold ${parseFloat(totalPnL) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                    {parseFloat(totalPnL) >= 0 ? '+' : ''}{formatCurrency(totalPnL)}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    </>
                 )}
             </div>
 
@@ -448,6 +593,16 @@ export default function JournalTable({ rows, setRows, investors }) {
                     </div>
                 </form>
             </Modal>
+
+            <AiImportModal
+                isOpen={isAiModalOpen}
+                onClose={() => setIsAiModalOpen(false)}
+                columns={columns}
+                existingRows={rows}
+                onAddTrades={(parsedTrades) => {
+                    setRows(prev => [...prev, ...parsedTrades]);
+                }}
+            />
         </div>
     );
 }

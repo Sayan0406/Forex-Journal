@@ -1,15 +1,9 @@
 import { useState, useMemo } from 'react';
 import { formatCurrency, groupTrades } from '../utils/journalUtils';
-import { Users, PieChart, TrendingUp, Wallet, Plus, Trash2, Phone, QrCode, Pencil, AlertCircle, Save, BarChart3, X, ChevronDown, ChevronRight, Calendar, Settings, Mail, Download } from 'lucide-react';
+import { Users, PieChart, TrendingUp, Wallet, Plus, Trash2, Phone, QrCode, Pencil, AlertCircle, Save, BarChart3, X, ChevronDown, ChevronRight, Calendar, Settings, Mail, Download, Link } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// ... (StatCard, ReserveFundModal, ProfitSplitModal, StatsModal components remain unchanged) ...
-// Wait, I need to keep the imports and top level components. 
-// I will just replace the MAIN component `InvestorDashboard` and its imports/helper functions if needed.
-// Actually, to be safe, I should use `multi_replace_file_content` to target specific blocks or replace the whole file if I'm confident. 
-// The file is getting large (~500 lines). 
-// Let's use `replace_file_content` on the `InvestorDashboard` component part.
+import { useAuth } from '../context/AuthContext';
 
 // I'll start by adding the imports.
 // Then I'll update the `InvestorDashboard` component.
@@ -338,9 +332,10 @@ const ReserveFundModal = ({ reserveFund, setReserveFund, totalInvestedCapital, o
     );
 };
 
-export default function InvestorDashboard({ totalPnL, investors, setInvestors, rows = [], reserveFund = 0, setReserveFund }) {
+export default function InvestorDashboard({ userRole = 'master', workspaceId, totalPnL, investors, setInvestors, rows = [], reserveFund = 0, setReserveFund }) {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const { currentUser } = useAuth();
     const [error, setError] = useState(null);
     const [viewStatsId, setViewStatsId] = useState(null); // ID of investor to view stats for
     const [isProfitSplitOpen, setIsProfitSplitOpen] = useState(false);
@@ -352,24 +347,27 @@ export default function InvestorDashboard({ totalPnL, investors, setInvestors, r
         profitPercent: '',
         upiId: '',
         phone: '',
-        email: ''
+        email: '',
+        isAdmin: false
     });
 
     const resetForm = () => {
-        setNewInvestor({ name: '', capital: '', profitPercent: '', upiId: '', phone: '', email: '' });
+        setNewInvestor({ name: '', capital: '', profitPercent: '', upiId: '', phone: '', email: '', isAdmin: false });
         setEditingId(null);
         setError(null);
         setIsFormOpen(false);
     };
 
     const handleEdit = (investor) => {
+        if (userRole !== 'master') return;
         setNewInvestor({
             name: investor.name,
             capital: investor.capital,
             profitPercent: investor.profitPercent,
             upiId: investor.upiId || '',
             phone: investor.phone || '',
-            email: investor.email || ''
+            email: investor.email || '',
+            isAdmin: investor.isAdmin || false
         });
         setEditingId(investor.id);
         setIsFormOpen(true);
@@ -411,7 +409,8 @@ export default function InvestorDashboard({ totalPnL, investors, setInvestors, r
                 profitPercent: profitPercent,
                 upiId: newInvestor.upiId,
                 phone: newInvestor.phone,
-                email: newInvestor.email
+                email: newInvestor.email,
+                isAdmin: newInvestor.isAdmin
             } : inv));
         } else {
             // Add new
@@ -422,7 +421,8 @@ export default function InvestorDashboard({ totalPnL, investors, setInvestors, r
                 profitPercent: profitPercent,
                 upiId: newInvestor.upiId,
                 phone: newInvestor.phone,
-                email: newInvestor.email
+                email: newInvestor.email,
+                isAdmin: newInvestor.isAdmin
             }]);
         }
 
@@ -433,42 +433,6 @@ export default function InvestorDashboard({ totalPnL, investors, setInvestors, r
         if (confirm('Remove this investor?')) {
             setInvestors(investors.filter(inv => inv.id !== id));
         }
-    };
-
-    const handleMailBackup = () => {
-        // 1. Generate JSON Blob
-        const backupData = {
-            date: new Date().toISOString(),
-            investors,
-            rows,
-            reserveFund,
-            totalPnL
-        };
-        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-
-        // 2. Trigger Download
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `forex_journal_backup_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        // 3. Open Mail Client
-        const investorEmails = investors
-            .map(inv => inv.email)
-            .filter(email => email) // Filter out empty
-            .join(',');
-
-        // 4. Toast / Alert
-        alert("Backup file downloaded! Please attach it manually to the email draft that opens now.");
-
-        const subject = encodeURIComponent(`Daily Trading Journal Backup - ${new Date().toLocaleDateString()}`);
-        const body = encodeURIComponent("Please find attached the daily trading journal backup.\n\n(Note: You must manually attach the downloaded file to this email.)");
-
-        window.location.href = `mailto:${investorEmails}?subject=${subject}&body=${body}`;
     };
 
     // Calculations
@@ -516,16 +480,18 @@ export default function InvestorDashboard({ totalPnL, investors, setInvestors, r
                     </p>
                 </div>
 
-                <button
-                    onClick={() => {
-                        resetForm();
-                        setIsFormOpen(!isFormOpen);
-                    }}
-                    className="btn btn-primary text-sm whitespace-nowrap"
-                >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Investor
-                </button>
+                {userRole === 'master' && (
+                    <button
+                        onClick={() => {
+                            resetForm();
+                            setIsFormOpen(!isFormOpen);
+                        }}
+                        className="btn btn-primary text-sm whitespace-nowrap"
+                    >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Investor
+                    </button>
+                )}
             </div>
 
             {/* Aggregates */}
@@ -537,16 +503,16 @@ export default function InvestorDashboard({ totalPnL, investors, setInvestors, r
                     value={traderShare}
                     icon={Users}
                     subtext="Net Profit"
-                    onAction={() => setIsProfitSplitOpen(true)}
-                    actionIcon={Settings}
+                    onAction={userRole === 'master' ? () => setIsProfitSplitOpen(true) : null}
+                    actionIcon={userRole === 'master' ? Settings : null}
                 />
                 <StatCard
                     title="Fund Capital"
                     value={totalCapital}
                     icon={TrendingUp}
                     subtext={reserveFund > 0 ? `Includes ₹${reserveFund} Reserve` : "Total Assets Under Mgmt"}
-                    onAction={() => setIsReserveFundOpen(true)}
-                    actionIcon={Pencil}
+                    onAction={userRole === 'master' ? () => setIsReserveFundOpen(true) : null}
+                    actionIcon={userRole === 'master' ? Pencil : null}
                 />
             </div>
 
@@ -633,8 +599,21 @@ export default function InvestorDashboard({ totalPnL, investors, setInvestors, r
                                 className="w-full bg-[color:var(--bg-tertiary)] border-none rounded p-2 text-sm text-[color:var(--text-primary)] focus:ring-1 focus:ring-[color:var(--accent-primary)]"
                             />
                         </div>
+                        {userRole === 'master' && (
+                            <div className="lg:col-span-1">
+                                <label className="flex items-center gap-2 cursor-pointer mt-6">
+                                    <input
+                                        type="checkbox"
+                                        checked={newInvestor.isAdmin || false}
+                                        onChange={e => setNewInvestor({ ...newInvestor, isAdmin: e.target.checked })}
+                                        className="w-4 h-4 rounded text-[color:var(--accent-primary)] focus:ring-[color:var(--accent-primary)] border-[color:var(--glass-border)] bg-[color:var(--bg-tertiary)]"
+                                    />
+                                    <span className="text-xs text-[color:var(--text-secondary)] font-medium">Sub-Admin Access</span>
+                                </label>
+                            </div>
+                        )}
                         <div className="lg:col-span-1">
-                            <button type="submit" className={`w-full btn py-2 text-sm ${editingId ? 'btn-primary' : 'bg-green-600 hover:bg-green-500 text-white'}`}>
+                            <button type="submit" className={`w-full btn py-2 text-sm ${editingId ? 'btn-primary' : 'bg-green-600 hover:bg-green-500 text-white'} mt-5`}>
                                 {editingId ? 'Update' : 'Save'}
                             </button>
                         </div>
@@ -654,7 +633,7 @@ export default function InvestorDashboard({ totalPnL, investors, setInvestors, r
                             <th className="p-3 text-right">Profit %</th>
                             <th className="p-3 text-right">P/L Share</th>
                             <th className="p-3 text-right">Net Worth</th>
-                            <th className="p-3 text-center">Actions</th>
+                            {userRole === 'master' && <th className="p-3 text-center">Actions</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[color:var(--glass-border)]">
@@ -671,12 +650,32 @@ export default function InvestorDashboard({ totalPnL, investors, setInvestors, r
                                 return (
                                     <tr key={inv.id} className="hover:bg-[color:var(--bg-tertiary)]/30 transition-colors">
                                         <td className="p-3 text-center text-[color:var(--text-secondary)]">{index + 1}</td>
-                                        <td className="p-3 font-medium text-[color:var(--text-primary)]">{inv.name}</td>
+                                        <td className="p-3 font-medium text-[color:var(--text-primary)]">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span>
+                                                    {userRole === 'master' || (inv.email && currentUser?.email && inv.email.toLowerCase() === currentUser.email.toLowerCase())
+                                                        ? inv.name 
+                                                        : `Investor ${index + 1}`}
+                                                </span>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    {userRole !== 'master' && (inv.email && currentUser?.email && inv.email.toLowerCase() === currentUser.email.toLowerCase()) && (
+                                                        <span className="text-[10px] text-[color:var(--text-secondary)] font-bold uppercase tracking-wider">(You)</span>
+                                                    )}
+                                                    {inv.isAdmin && <span className="w-max px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-400">Sub-Admin</span>}
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td className="p-3 text-[color:var(--text-secondary)]">
                                             <div className="flex flex-col gap-1">
-                                                {inv.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {inv.email}</span>}
-                                                {inv.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {inv.phone}</span>}
-                                                {inv.upiId && <span className="flex items-center gap-1"><QrCode className="w-3 h-3" /> {inv.upiId}</span>}
+                                                {userRole === 'master' ? (
+                                                    <>
+                                                        {inv.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {inv.email}</span>}
+                                                        {inv.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {inv.phone}</span>}
+                                                        {inv.upiId && <span className="flex items-center gap-1"><QrCode className="w-3 h-3" /> {inv.upiId}</span>}
+                                                    </>
+                                                ) : (
+                                                    <span className="text-[10px] text-slate-500 italic flex items-center gap-1"><Mail className="w-3 h-3" /> Hidden for Privacy</span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="p-3 text-right text-[color:var(--text-secondary)]">{formatCurrency(inv.capital)}</td>
@@ -685,48 +684,50 @@ export default function InvestorDashboard({ totalPnL, investors, setInvestors, r
                                             {pnlShare > 0 ? '+' : ''}{formatCurrency(pnlShare)}
                                         </td>
                                         <td className="p-3 text-right font-bold text-[color:var(--text-primary)]">{formatCurrency(netWorth)}</td>
-                                        <td className="p-3 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <button
-                                                    onClick={() => setViewStatsId(inv.id)}
-                                                    className="text-[color:var(--text-secondary)] hover:text-[color:var(--accent-primary)] transition-colors p-1"
-                                                    title="View Stats"
-                                                >
-                                                    <BarChart3 className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleEdit(inv)}
-                                                    className="text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors p-1"
-                                                    title="Edit"
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(inv.id)}
-                                                    className="text-[color:var(--text-secondary)] hover:text-rose-400 transition-colors p-1"
-                                                    title="Remove"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
+                                        {userRole === 'master' && (
+                                            <td className="p-3 text-center">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            const url = `${window.location.origin}/portal/${workspaceId}`;
+                                                            navigator.clipboard.writeText(url);
+                                                            alert("Investor Portal Link copied to clipboard!");
+                                                        }}
+                                                        className="text-[color:var(--text-secondary)] hover:text-emerald-400 transition-colors p-1"
+                                                        title="Copy Portal Link"
+                                                    >
+                                                        <Link className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setViewStatsId(inv.id)}
+                                                        className="text-[color:var(--text-secondary)] hover:text-[color:var(--accent-primary)] transition-colors p-1"
+                                                        title="View Stats"
+                                                    >
+                                                        <BarChart3 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleEdit(inv)}
+                                                        className="text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors p-1"
+                                                        title="Edit"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(inv.id)}
+                                                        className="text-[color:var(--text-secondary)] hover:text-rose-400 transition-colors p-1"
+                                                        title="Remove"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 );
                             })
                         )}
                     </tbody>
                 </table>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-                <button
-                    onClick={handleMailBackup}
-                    className="flex items-center gap-2 bg-[color:var(--bg-tertiary)] hover:bg-[color:var(--bg-secondary)] text-[color:var(--text-primary)] px-4 py-2 rounded-lg transition-colors border border-[color:var(--glass-border)] text-sm font-medium"
-                >
-                    <Mail className="w-4 h-4" />
-                    Email Daily Backup
-                    <Download className="w-3 h-3 text-[color:var(--text-secondary)] ml-1" />
-                </button>
             </div>
         </div>
     );
