@@ -495,10 +495,10 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
             </div>
 
             {/* Aggregates */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Master Trader Info (New) */}
-          {(userRole === 'master' || userRole === 'subadmin') && (
-            <div className="glass-panel p-6 border-l-4 border-l-amber-500 bg-amber-500/5 relative overflow-hidden group">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                {/* Master Trader Info (New) - Spans 2 columns on large screens to balance stats */}
+                {(userRole === 'master' || userRole === 'subadmin') && (
+                    <div className="lg:col-span-4 glass-panel p-6 border-l-4 border-l-amber-500 bg-amber-500/5 relative overflow-hidden group mb-2">
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all duration-500" />
               
               <div className="flex justify-between items-start mb-6">
@@ -656,7 +656,8 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
             )}
 
             {/* Investor List */}
-            <div className="overflow-x-auto rounded-lg border border-[color:var(--glass-border)]">
+            <div className="mt-8">
+                <div className="overflow-x-auto rounded-lg border border-[color:var(--glass-border)] shadow-2xl bg-[color:var(--bg-secondary)]/30">
                 <table className="w-full text-left text-sm whitespace-nowrap">
                     <thead className="bg-[color:var(--bg-secondary)]/50 text-[color:var(--text-secondary)] uppercase text-xs">
                         <tr>
@@ -762,6 +763,7 @@ export default function InvestorDashboard({ userRole = 'master', workspaceId, to
                         )}
                     </tbody>
                 </table>
+            </div>
             </div>
         </div>
     );
