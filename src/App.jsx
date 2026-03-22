@@ -57,6 +57,7 @@ function AdminLayout() {
   
   // App Loader
   const [loadingData, setLoadingData] = useState(true);
+  const [isInitialLoadFinished, setIsInitialLoadFinished] = useState(false);
 
   // Zoom Level Management
   const [zoomLevel, setZoomLevel] = useState(() => {
@@ -167,7 +168,7 @@ function AdminLayout() {
     }, 500); // 500ms debounce for faster sync
     
     return () => clearTimeout(timeout);
-  }, [rows, investors, reserveFund, currentUser, loadingData, userRole, ownerPhone, ownerUpi]);
+  }, [rows, investors, reserveFund, currentUser, loadingData, userRole, ownerPhone, ownerUpi, isInitialLoadFinished]);
 
   // Theme & Zoom Effects
   useEffect(() => {
