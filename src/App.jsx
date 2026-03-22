@@ -147,39 +147,38 @@ function AdminLayout() {
 
   // Sync Data back to Firestore Reactively
   useEffect(() => {
-    if (loadingData || !isInitialLoadFinished || !currentUser || !workspaceId) return;
-    
-    // Sub-admins and masters can write data to the workspace
+    // Basic checks
+    if (loadingData || !currentUser || !workspaceId) return;
     if (userRole !== 'master' && userRole !== 'subadmin') return;
 
-    // Show indicator immediately to give feedback
+    // Show indicator immediately
     setIsSaving(true);
 
     const timeout = setTimeout(async () => {
       try {
         const docRef = doc(db, 'workspaces', workspaceId);
         
-        const subAdminsArray = investors
+        const subAdminsArray = (investors || [])
             .filter(i => i.isAdmin && i.email)
             .map(i => i.email.toLowerCase());
 
         await setDoc(docRef, {
-          rows,
-          investors,
-          reserveFund,
+          rows: rows || [],
+          investors: investors || [],
+          reserveFund: reserveFund || 0,
           subAdmins: subAdminsArray,
-          ownerPhone,
-          ownerUpi,
+          ownerPhone: ownerPhone || '',
+          ownerUpi: ownerUpi || '',
           updatedAt: new Date().toISOString()
         }, { merge: true });
         
-        // Keep indicator for a brief moment after success
-        setTimeout(() => setIsSaving(false), 800);
+        // Success: blink the indicator then turn off
+        setTimeout(() => setIsSaving(false), 500);
       } catch (err) {
-        console.error("Failed saving to Firestore:", err);
+        console.error("Critical Sync Error:", err);
         setIsSaving(false);
       }
-    }, 800); // 800ms debounce
+    }, 200); // Ultra-fast 200ms debounce
     
     return () => clearTimeout(timeout);
   }, [rows, investors, reserveFund, currentUser, loadingData, userRole, ownerPhone, ownerUpi, isInitialLoadFinished]);
