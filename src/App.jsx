@@ -225,29 +225,30 @@ function AdminLayout() {
             <div className="p-2 bg-[color:var(--accent-primary)]/10 rounded-lg border border-[color:var(--accent-primary)]/20">
               <LayoutDashboard className="w-8 h-8 text-[color:var(--accent-primary)]" />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-black bg-gradient-to-r from-[color:var(--text-primary)] via-[color:var(--text-secondary)] to-[color:var(--text-primary)] bg-clip-text text-transparent tracking-tight">
-                  {workspaceName}
-                </h1>
-                {userRole === 'master' && (
-                  <span className="bg-amber-500/10 text-amber-500 text-[10px] font-black px-2 py-0.5 rounded border border-amber-500/20 tracking-widest uppercase shadow-sm shadow-amber-500/5">Master Admin</span>
-                )}
-                {userRole === 'subadmin' && (
-                  <span className="bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-2 py-0.5 rounded border border-indigo-500/20 tracking-widest uppercase shadow-sm shadow-indigo-500/5">Sub-Admin</span>
-                )}
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-black bg-gradient-to-r from-[color:var(--text-primary)] via-[color:var(--text-secondary)] to-[color:var(--text-primary)] bg-clip-text text-transparent tracking-tight">
+                    {workspaceName}
+                  </h1>
+                  <span className="text-[8px] opacity-30 mt-1 font-mono">v19.4</span>
+                  {userRole === 'master' && (
+                    <span className="bg-amber-500/10 text-amber-500 text-[10px] font-black px-2 py-0.5 rounded border border-amber-500/20 tracking-widest uppercase shadow-sm shadow-amber-500/5">Master Admin</span>
+                  )}
+                  {userRole === 'subadmin' && (
+                    <span className="bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-2 py-0.5 rounded border border-indigo-500/20 tracking-widest uppercase shadow-sm shadow-indigo-500/5">Sub-Admin</span>
+                  )}
+                </div>
                 {isSaving && (
-                  <span className="flex items-center gap-1.5 text-emerald-400 text-[10px] font-bold animate-pulse">
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></div>
-                    Saving Changes...
-                  </span>
+                  <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] bg-emerald-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-xs font-bold animate-in slide-in-from-top-4 duration-300">
+                    <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                    Syncing with Cloud...
+                  </div>
                 )}
+                {ownerName && userRole === 'subadmin' && (
+                  <p className="text-[10px] text-[color:var(--text-secondary)] opacity-70 font-medium tracking-wide">Trader: {ownerName}</p>
+                )}
+                <p className="text-[color:var(--text-secondary)] text-sm font-medium">Professional Trading Journal</p>
               </div>
-              {ownerName && userRole === 'subadmin' && (
-                <p className="text-[10px] text-[color:var(--text-secondary)] opacity-70 font-medium">Trader: {ownerName}</p>
-              )}
-              <p className="text-[color:var(--text-secondary)] text-sm">Professional Trading Journal</p>
-            </div>
           </div>
 
           <div className="flex gap-2 items-center">
