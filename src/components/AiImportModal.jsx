@@ -44,18 +44,27 @@ export default function AiImportModal({ isOpen, onClose, columns, existingRows, 
                 const trade = { id: uuidv4() };
                 
                 // Flexible mapping based on content rather than just index if possible
-                // But generally the sequence is: Type, Symbol, Lot, Entry, Exit, PnL...
+                // Mapping based on the specific vertical sequence observed
                 const rawAction = block[0] || 'S';
                 trade.type = rawAction.toLowerCase().startsWith('b') ? 'Buy' : 'Sell';
                 trade.symbol = block[1] || 'Unknown';
                 
                 const rawLot = block[2] || '0';
-                trade.lot = rawLot.includes('/') ? rawLot.split('/')[0].replace(/[^\d.]/g, '') : rawLot.replace(/[^\d.]/g, '');
+                trade.lot = parseFloat(rawLot.includes('/') ? rawLot.split('/')[0].replace(/[^\d.]/g, '') : rawLot.replace(/[^\d.]/g, '')) || 0;
                 
-                trade.entry = (block[3] || '0').replace(/[^\d.]/g, '');
-                trade.exit = (block[4] || '0').replace(/[^\d.]/g, '');
-                trade.pnl = (block[6] || block[5] || '0').replace(/[^\d.+-]/g, ''); // Prioritize Net PnL (block 6)
-                trade.date = block[8] || new Date().toLocaleDateString();
+                trade.entry = parseFloat((block[3] || '0').replace(/[^\d.]/g, '')) || 0;
+                trade.exit = parseFloat((block[4] || '0').replace(/[^\d.]/g, '')) || 0;
+                trade.pnl = parseFloat((block[6] || block[5] || '0').replace(/[^\d.+-]/g, '')) || 0; // Prioritize Net PnL (block 6)
+                
+                // Helper to convert DD/MM/YYYY to YYYY-MM-DD
+                const rawDate = block[8] || '';
+                const dateParts = rawDate.split(' ')[0].split('/');
+                if (dateParts.length === 3) {
+                    trade.date = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+                } else {
+                    trade.date = rawDate || new Date().toISOString().split('T')[0];
+                }
+
                 trade.status = 'Closed';
                 trade.notes = block[10] || 'AI Vertical Import'; // Store Order Number in Notes
 
@@ -70,7 +79,22 @@ export default function AiImportModal({ isOpen, onClose, columns, existingRows, 
                 const newTrade = { id: uuidv4() };
                 columns.forEach((schemaCol, index) => {
                     if (cols[index] !== undefined && schemaCol.id !== 'actions') {
-                        newTrade[schemaCol.id] = cols[index].trim();
+                        let val = cols[index].trim();
+                        if (schemaCol.type === 'number') {
+                            newTrade[schemaCol.id] = parseFloat(val.replace(/[^\d.+-]/g, '')) || 0;
+                        } else if (schemaCol.type === 'date') {
+                            // Try to handle DD/MM/YYYY or similar
+                            const parts = val.split(/[/-]/);
+                            if (parts.length === 3) {
+                                // Assume DD/MM/YYYY or YYYY-MM-DD
+                                if (parts[0].length === 4) newTrade[schemaCol.id] = val; // Already YYYY
+                                else newTrade[schemaCol.id] = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            } else {
+                                newTrade[schemaCol.id] = val;
+                            }
+                        } else {
+                            newTrade[schemaCol.id] = val;
+                        }
                     }
                 });
                 parsedTrades.push(newTrade);
@@ -78,9 +102,15 @@ export default function AiImportModal({ isOpen, onClose, columns, existingRows, 
         }
 
         if (parsedTrades.length > 0) {
-            // Deduplicate based on Order Number (Notes field)
-            const existingOrderIds = new Set(existingRows.map(r => r.notes?.trim()).filter(Boolean));
-            const newTrades = parsedTrades.filter(t => !existingOrderIds.has(t.notes?.trim()));
+            // Deduplicate based on Order Number (Notes field) or Symbol+Date+PnL combo if no notes
+            const existingKeys = new Set(existingRows.map(r => 
+                r.notes?.trim() ? r.notes.trim() : `${r.symbol}-${r.date}-${r.pnl}`
+            ).filter(Boolean));
+
+            const newTrades = parsedTrades.filter(t => {
+                const key = t.notes?.trim() ? t.notes.trim() : `${t.symbol}-${t.date}-${t.pnl}`;
+                return !existingKeys.has(key);
+            });
 
             if (newTrades.length > 0) {
                 onAddTrades(newTrades);
