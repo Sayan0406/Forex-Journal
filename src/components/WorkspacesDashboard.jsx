@@ -346,6 +346,7 @@ export default function WorkspacesDashboard() {
             const rowCount = ws.rows?.length || 0;
             const investorCount = ws.investors?.length || 0;
             const totalFund = (ws.investors?.reduce((sum, inv) => sum + inv.capital, 0) || 0) + (ws.reserveFund || 0);
+            const totalNetPnL = (ws.rows || []).reduce((sum, row) => sum + (parseFloat(row.pnl) || 0), 0);
 
             return (
               <Reorder.Item
@@ -430,7 +431,17 @@ export default function WorkspacesDashboard() {
                         ID: {ws.id.split('-')[0]}...
                       </p>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Net P/L</p>
+                          <p className={`font-bold ${totalNetPnL < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                              {formatCurrency(totalNetPnL)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Trades</p>
+                          <p className="font-medium text-[color:var(--text-primary)]">{rowCount}</p>
+                        </div>
                         <div>
                           <p className="text-[10px] uppercase font-bold text-[color:var(--text-secondary)] tracking-wider">Fund Size</p>
                           <p className="font-medium text-[color:var(--text-primary)]">{formatCurrency(totalFund)}</p>
