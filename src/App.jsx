@@ -114,12 +114,14 @@ function AdminLayout() {
             setOwnerName(name);
             setOwnerEmail(email);
           }
+          setIsInitialLoadFinished(true);
         } else {
-          // Navigate to lobby if workspace id is broken or absent
-          navigate('/workspaces');
+          // If workspace doesn't exist yet (new creation), we still allow saving
+          setIsInitialLoadFinished(true);
         }
       } catch (err) {
         console.error("Failed pulling from Firestore:", err);
+        // dataLoaded stays false on error -> prevents destructive empty writes
       } finally {
         setLoadingData(false);
       }
@@ -132,7 +134,7 @@ function AdminLayout() {
 
   // Sync Data back to Firestore Reactively
   useEffect(() => {
-    if (loadingData || !currentUser || !workspaceId) return; // Prevent overwriting cloud data immediately on mount
+    if (loadingData || !isInitialLoadFinished || !currentUser || !workspaceId) return; // STRICT GUARD
     
     // Sub-admins and masters can write data to the workspace
     if (userRole !== 'master' && userRole !== 'subadmin') return;
