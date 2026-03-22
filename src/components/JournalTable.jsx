@@ -283,7 +283,8 @@ export default function JournalTable({ userRole = 'master', rows, setRows, inves
                             ) : (
                                 <input
                                     type={col.type}
-                                    value={row[col.id] || ''}
+                                    step={col.type === 'number' ? 'any' : undefined}
+                                    value={row[col.id] ?? ''}
                                     onChange={(e) => handleCellChange(row.id, col.id, e.target.value)}
                                     className={`bg-transparent border-none w-full focus:ring-1 focus:ring-[color:var(--accent-primary)]/50 rounded px-1 outline-none min-w-[60px] lg:min-w-[80px] ${cellColorClass}`}
                                     placeholder="..."

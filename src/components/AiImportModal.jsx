@@ -56,13 +56,21 @@ export default function AiImportModal({ isOpen, onClose, columns, existingRows, 
                 trade.exit = parseFloat((block[4] || '0').replace(/[^\d.]/g, '')) || 0;
                 trade.pnl = parseFloat((block[6] || block[5] || '0').replace(/[^\d.+-]/g, '')) || 0; // Prioritize Net PnL (block 6)
                 
-                // Helper to convert DD/MM/YYYY to YYYY-MM-DD
+                // Helper to convert various date formats to YYYY-MM-DD
                 const rawDate = block[8] || '';
-                const dateParts = rawDate.split(' ')[0].split('/');
+                const cleanDate = rawDate.split(' ')[0].replace(/[^\d/-]/g, ''); // Keep only numbers and separators
+                const dateParts = cleanDate.split(/[/-]/);
+                
                 if (dateParts.length === 3) {
-                    trade.date = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+                    if (dateParts[0].length === 4) { // YYYY-MM-DD
+                        trade.date = `${dateParts[0]}-${dateParts[1].padStart(2, '0')}-${dateParts[2].padStart(2, '0')}`;
+                    } else if (dateParts[2].length === 4) { // DD/MM/YYYY
+                        trade.date = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+                    } else {
+                        trade.date = rawDate;
+                    }
                 } else {
-                    trade.date = rawDate || new Date().toISOString().split('T')[0];
+                    trade.date = new Date().toISOString().split('T')[0];
                 }
 
                 trade.status = 'Closed';
