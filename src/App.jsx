@@ -133,16 +133,30 @@ function AdminLayout() {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  // Unload protection: Warn user if trying to close while a save is pending
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isSaving) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isSaving]);
+
   // Sync Data back to Firestore Reactively
   useEffect(() => {
-    if (loadingData || !isInitialLoadFinished || !currentUser || !workspaceId) return; // STRICT GUARD
+    if (loadingData || !isInitialLoadFinished || !currentUser || !workspaceId) return;
     
     // Sub-admins and masters can write data to the workspace
     if (userRole !== 'master' && userRole !== 'subadmin') return;
 
+    // Show indicator immediately to give feedback
+    setIsSaving(true);
+
     const timeout = setTimeout(async () => {
       try {
-        setIsSaving(true);
         const docRef = doc(db, 'workspaces', workspaceId);
         
         const subAdminsArray = investors
@@ -159,13 +173,13 @@ function AdminLayout() {
           updatedAt: new Date().toISOString()
         }, { merge: true });
         
-        // Brief delay for the saving indicator to be visible
-        setTimeout(() => setIsSaving(false), 500);
+        // Keep indicator for a brief moment after success
+        setTimeout(() => setIsSaving(false), 800);
       } catch (err) {
         console.error("Failed saving to Firestore:", err);
         setIsSaving(false);
       }
-    }, 500); // 500ms debounce for faster sync
+    }, 800); // 800ms debounce
     
     return () => clearTimeout(timeout);
   }, [rows, investors, reserveFund, currentUser, loadingData, userRole, ownerPhone, ownerUpi, isInitialLoadFinished]);
