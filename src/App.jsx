@@ -128,6 +128,8 @@ function AdminLayout() {
     loadFirebaseData();
   }, [currentUser, workspaceId]);
 
+  const [isSaving, setIsSaving] = useState(false);
+
   // Sync Data back to Firestore Reactively
   useEffect(() => {
     if (loadingData || !currentUser || !workspaceId) return; // Prevent overwriting cloud data immediately on mount
@@ -137,6 +139,7 @@ function AdminLayout() {
 
     const timeout = setTimeout(async () => {
       try {
+        setIsSaving(true);
         const docRef = doc(db, 'workspaces', workspaceId);
         
         const subAdminsArray = investors
@@ -152,13 +155,17 @@ function AdminLayout() {
           ownerUpi,
           updatedAt: new Date().toISOString()
         }, { merge: true });
+        
+        // Brief delay for the saving indicator to be visible
+        setTimeout(() => setIsSaving(false), 500);
       } catch (err) {
         console.error("Failed saving to Firestore:", err);
+        setIsSaving(false);
       }
-    }, 1000); // Debounce saves by 1 second to avoid massive write spikes
+    }, 500); // 500ms debounce for faster sync
     
     return () => clearTimeout(timeout);
-  }, [rows, investors, reserveFund, currentUser, loadingData]);
+  }, [rows, investors, reserveFund, currentUser, loadingData, userRole, ownerPhone, ownerUpi]);
 
   // Theme & Zoom Effects
   useEffect(() => {
@@ -212,6 +219,12 @@ function AdminLayout() {
                 )}
                 {userRole === 'subadmin' && (
                   <span className="bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-2 py-0.5 rounded border border-indigo-500/20 tracking-widest uppercase shadow-sm shadow-indigo-500/5">Sub-Admin</span>
+                )}
+                {isSaving && (
+                  <span className="flex items-center gap-1.5 text-emerald-400 text-[10px] font-bold animate-pulse">
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></div>
+                    Saving Changes...
+                  </span>
                 )}
               </div>
               {ownerName && userRole === 'subadmin' && (
