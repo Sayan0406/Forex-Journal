@@ -145,11 +145,42 @@ function AdminLayout() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isSaving]);
 
+  const handleForceSave = async () => {
+    if (!workspaceId) return;
+    try {
+      setIsSaving(true);
+      const docRef = doc(db, 'workspaces', workspaceId);
+      const subAdminsArray = (investors || [])
+          .filter(i => i.isAdmin && i.email)
+          .map(i => i.email.toLowerCase());
+
+      await setDoc(docRef, {
+        rows: rows || [],
+        investors: investors || [],
+        reserveFund: reserveFund || 0,
+        subAdmins: subAdminsArray,
+        ownerPhone: ownerPhone || '',
+        ownerUpi: ownerUpi || '',
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      
+      alert("✅ Cloud Sync Successful!");
+      setTimeout(() => setIsSaving(false), 500);
+    } catch (err) {
+      console.error("Force Save Error:", err);
+      alert("❌ Sync Failed: " + err.message);
+      setIsSaving(false);
+    }
+  };
+
   // Sync Data back to Firestore Reactively
   useEffect(() => {
     // Basic checks
     if (loadingData || !currentUser || !workspaceId) return;
     if (userRole !== 'master' && userRole !== 'subadmin') return;
+
+    // Nuclear Debugging: Let's see if this effect EVEN RUNS
+    alert(`Sync Triggered! Trades: ${rows?.length}`);
 
     // Show indicator immediately
     setIsSaving(true);
@@ -298,6 +329,16 @@ function AdminLayout() {
                     </div>
                   </button>
                 )}
+                <button
+                  onClick={handleForceSave}
+                  className="btn btn-ghost !px-4 !py-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10"
+                  title="Force Cloud Sync"
+                >
+                  <div className="flex items-center gap-2">
+                    <Check className="w-5 h-5" />
+                    <span className="hidden sm:inline">Save Sync</span>
+                  </div>
+                </button>
                 <button
                   onClick={() => {
                     let dataToExport = { rows, investors, reserveFund };
