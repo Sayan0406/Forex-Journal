@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, setDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, LayoutDashboard, Trash2, ArrowRight, Pencil, Palette, Check, X, GripVertical, Clock, ArrowUpDown } from 'lucide-react';
+import { Plus, LayoutDashboard, Trash2, ArrowRight, Pencil, Palette, X, GripVertical, Clock, ArrowUpDown } from 'lucide-react';
 import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../utils/journalUtils';
 
@@ -308,7 +308,7 @@ export default function WorkspacesDashboard() {
                       title={theme.label}
                     >
                       {selectedTheme === theme.id && (
-                        <Check className="absolute inset-0 m-auto text-white w-5 h-5 drop-shadow-md" />
+                      <span className="absolute inset-0 m-auto text-white w-5 h-5 flex items-center justify-center font-black drop-shadow-md">✓</span>
                       )}
                     </button>
                   ))}

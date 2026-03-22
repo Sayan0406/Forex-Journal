@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ClipboardPaste, Check } from 'lucide-react';
+import { X, ClipboardPaste } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function AiImportModal({ isOpen, onClose, columns, existingRows, onAddTrades }) {
@@ -169,9 +169,9 @@ export default function AiImportModal({ isOpen, onClose, columns, existingRows, 
                     <button
                         onClick={handleProcess}
                         disabled={!pasteData.trim()}
-                        className="btn bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="btn bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 px-6"
                     >
-                        <Check className="w-4 h-4" />
+                        <span className="font-bold">✓</span>
                         Process & Import
                     </button>
                 </div>

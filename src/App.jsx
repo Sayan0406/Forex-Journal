@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Palette, Type, Minus, Plus, LogOut, Home, Upload, Download, Check } from 'lucide-react';
+import { LayoutDashboard, Palette, Type, Minus, Plus, LogOut, Home, Upload, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './index.css';
 import JournalTable from './components/JournalTable';
@@ -207,6 +207,7 @@ function AdminLayout() {
         setTimeout(() => setIsSaving(false), 500);
       } catch (err) {
         console.error("Critical Sync Error:", err);
+        alert("⚠️ Auto-Sync failed! Changes might NOT be saved to cloud. Error: " + err.message);
         setIsSaving(false);
       }
     }, 200); // Ultra-fast 200ms debounce
@@ -335,7 +336,7 @@ function AdminLayout() {
                   title="Force Cloud Sync"
                 >
                   <div className="flex items-center gap-2">
-                    <Check className="w-5 h-5" />
+                    <span className="w-5 h-5 flex items-center justify-center font-bold">✓</span>
                     <span className="hidden sm:inline">Save Sync</span>
                   </div>
                 </button>
