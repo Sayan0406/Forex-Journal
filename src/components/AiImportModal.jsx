@@ -14,33 +14,37 @@ export default function AiImportModal({ isOpen, onClose, columns, existingRows, 
         const rawLines = pasteData.trim().split('\n').map(l => l.trim()).filter(l => l);
         let parsedTrades = [];
 
-        // Detection: Is this the vertical MT4/MT5 style format?
-        const verticalKeywords = ["symbol", "vol.", "entry price", "avg.price", "pnl", "open time", "action"];
-        const headerMatchCount = rawLines.slice(0, 20).filter(line => 
-            verticalKeywords.some(key => line.toLowerCase().includes(key.toLowerCase()))
-        ).length;
+        // Detection Logic: Is this a vertical columnar format?
+        const hasHeaders = rawLines.slice(0, 25).filter(line => 
+            ["symbol", "vol.", "entry price", "avg.price", "pnl", "open time", "action"].some(key => line.toLowerCase().includes(key.toLowerCase()))
+        ).length >= 3;
+        
+        const hasOrderHashes = rawLines.some(l => l.startsWith('#') && l.length > 4);
+        const isVertical = hasHeaders || hasOrderHashes || (rawLines.length >= 12 && rawLines.length % 12 === 0);
 
-        if (headerMatchCount >= 4) {
+        if (isVertical) {
             // VERTICAL PARSER
-            // Data usually starts after the 'Action' header or similar
             let dataOffset = 0;
-            for (let i = 0; i < Math.min(rawLines.length, 25); i++) {
-                if (rawLines[i].toLowerCase() === 'action') {
-                    dataOffset = i + 1;
-                    break;
+            if (hasHeaders) {
+                for (let i = 0; i < Math.min(rawLines.length, 25); i++) {
+                    if (rawLines[i].toLowerCase() === 'action' || rawLines[i].toLowerCase().includes('status')) {
+                        dataOffset = i + 1;
+                        break;
+                    }
                 }
+                if (dataOffset === 0) dataOffset = 12; 
             }
-            if (dataOffset === 0) dataOffset = 12; // Fallback to user's 12-header block size
 
             const dataLines = rawLines.slice(dataOffset);
-            // Blocks of 12 lines each as seen in user's prompt
+            // Blocks of 12 lines each as seen in MT4/MT5 reports
             for (let i = 0; i < dataLines.length; i += 12) {
                 const block = dataLines.slice(i, i + 12);
                 if (block.length < 5) break;
 
                 const trade = { id: uuidv4() };
                 
-                // Mapping based on the specific vertical sequence observed
+                // Flexible mapping based on content rather than just index if possible
+                // But generally the sequence is: Type, Symbol, Lot, Entry, Exit, PnL...
                 const rawAction = block[0] || 'S';
                 trade.type = rawAction.toLowerCase().startsWith('b') ? 'Buy' : 'Sell';
                 trade.symbol = block[1] || 'Unknown';
@@ -53,7 +57,6 @@ export default function AiImportModal({ isOpen, onClose, columns, existingRows, 
                 trade.pnl = (block[5] || '0').replace(/[^\d.+-]/g, '');
                 trade.date = block[8] || new Date().toLocaleDateString();
                 trade.status = 'Closed';
-                trade.investment = 0; // Default or calculated
                 trade.notes = 'AI Vertical Import';
 
                 parsedTrades.push(trade);
