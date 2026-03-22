@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Palette, Type, Minus, Plus, LogOut, Home, Upload, Download } from 'lucide-react';
+import { LayoutDashboard, Palette, Type, Minus, Plus, LogOut, Home, Upload, Download, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './index.css';
 import JournalTable from './components/JournalTable';
