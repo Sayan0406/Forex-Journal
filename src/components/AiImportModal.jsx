@@ -11,24 +11,67 @@ export default function AiImportModal({ isOpen, onClose, columns, existingRows, 
     const handleProcess = () => {
         if (!pasteData) return;
 
-        // Simple parser for tab or comma separated data
-        const lines = pasteData.trim().split('\n');
-        const parsedTrades = [];
+        const rawLines = pasteData.trim().split('\n').map(l => l.trim()).filter(l => l);
+        let parsedTrades = [];
 
-        for (const line of lines) {
-            const cols = line.split(/[\t,]+/);
-            if (cols.length < 2) continue; // Skip empty lines or single words
-            
-            const newTrade = { id: uuidv4() };
-            
-            // Map the parsed columns linearly to the schema (basic matching)
-            columns.forEach((schemaCol, index) => {
-                if (cols[index] !== undefined && schemaCol.id !== 'actions') {
-                    newTrade[schemaCol.id] = cols[index].trim();
+        // Detection: Is this the vertical MT4/MT5 style format?
+        const verticalKeywords = ["symbol", "vol.", "entry price", "avg.price", "pnl", "open time", "action"];
+        const headerMatchCount = rawLines.slice(0, 20).filter(line => 
+            verticalKeywords.some(key => line.toLowerCase().includes(key.toLowerCase()))
+        ).length;
+
+        if (headerMatchCount >= 4) {
+            // VERTICAL PARSER
+            // Data usually starts after the 'Action' header or similar
+            let dataOffset = 0;
+            for (let i = 0; i < Math.min(rawLines.length, 25); i++) {
+                if (rawLines[i].toLowerCase() === 'action') {
+                    dataOffset = i + 1;
+                    break;
                 }
-            });
-            
-            parsedTrades.push(newTrade);
+            }
+            if (dataOffset === 0) dataOffset = 12; // Fallback to user's 12-header block size
+
+            const dataLines = rawLines.slice(dataOffset);
+            // Blocks of 12 lines each as seen in user's prompt
+            for (let i = 0; i < dataLines.length; i += 12) {
+                const block = dataLines.slice(i, i + 12);
+                if (block.length < 5) break;
+
+                const trade = { id: uuidv4() };
+                
+                // Mapping based on the specific vertical sequence observed
+                const rawAction = block[0] || 'S';
+                trade.type = rawAction.toLowerCase().startsWith('b') ? 'Buy' : 'Sell';
+                trade.symbol = block[1] || 'Unknown';
+                
+                const rawLot = block[2] || '0';
+                trade.lot = rawLot.includes('/') ? rawLot.split('/')[0].replace(/[^\d.]/g, '') : rawLot.replace(/[^\d.]/g, '');
+                
+                trade.entry = (block[3] || '0').replace(/[^\d.]/g, '');
+                trade.exit = (block[4] || '0').replace(/[^\d.]/g, '');
+                trade.pnl = (block[5] || '0').replace(/[^\d.+-]/g, '');
+                trade.date = block[8] || new Date().toLocaleDateString();
+                trade.status = 'Closed';
+                trade.investment = 0; // Default or calculated
+                trade.notes = 'AI Vertical Import';
+
+                parsedTrades.push(trade);
+            }
+        } else {
+            // STANDARD LINE-BY-LINE PARSER (CSV/TSV)
+            for (const line of rawLines) {
+                const cols = line.split(/[\t,]+/);
+                if (cols.length < 2) continue; 
+                
+                const newTrade = { id: uuidv4() };
+                columns.forEach((schemaCol, index) => {
+                    if (cols[index] !== undefined && schemaCol.id !== 'actions') {
+                        newTrade[schemaCol.id] = cols[index].trim();
+                    }
+                });
+                parsedTrades.push(newTrade);
+            }
         }
 
         if (parsedTrades.length > 0) {
