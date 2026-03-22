@@ -11,7 +11,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Portal from './components/Portal';
 import WorkspacesDashboard from './components/WorkspacesDashboard';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 export const THEMES = [
