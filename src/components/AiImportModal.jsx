@@ -54,10 +54,10 @@ export default function AiImportModal({ isOpen, onClose, columns, existingRows, 
                 
                 trade.entry = (block[3] || '0').replace(/[^\d.]/g, '');
                 trade.exit = (block[4] || '0').replace(/[^\d.]/g, '');
-                trade.pnl = (block[5] || '0').replace(/[^\d.+-]/g, '');
+                trade.pnl = (block[6] || block[5] || '0').replace(/[^\d.+-]/g, ''); // Prioritize Net PnL (block 6)
                 trade.date = block[8] || new Date().toLocaleDateString();
                 trade.status = 'Closed';
-                trade.notes = 'AI Vertical Import';
+                trade.notes = block[10] || 'AI Vertical Import'; // Store Order Number in Notes
 
                 parsedTrades.push(trade);
             }
@@ -78,7 +78,18 @@ export default function AiImportModal({ isOpen, onClose, columns, existingRows, 
         }
 
         if (parsedTrades.length > 0) {
-            onAddTrades(parsedTrades);
+            // Deduplicate based on Order Number (Notes field)
+            const existingOrderIds = new Set(existingRows.map(r => r.notes?.trim()).filter(Boolean));
+            const newTrades = parsedTrades.filter(t => !existingOrderIds.has(t.notes?.trim()));
+
+            if (newTrades.length > 0) {
+                onAddTrades(newTrades);
+                if (newTrades.length < parsedTrades.length) {
+                    alert(`Imported ${newTrades.length} new trades. Skipped ${parsedTrades.length - newTrades.length} duplicates.`);
+                }
+            } else {
+                alert('All trades in this paste are already in your journal.');
+            }
         }
         
         setPasteData('');
